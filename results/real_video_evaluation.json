@@ -1,0 +1,9 @@
+{
+  "input_video": "video.webm",
+  "input_size_mb": 10.553699493408203,
+  "reconstructed_size_mb": 33.13026237487793,
+  "frames_compared": 1691,
+  "mse": 0.0017409631982445717,
+  "psnr_db": 28.091257095336914,
+  "learned_test_bpp": 1.1719605016708374
+}
