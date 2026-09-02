@@ -1,5 +1,7 @@
 import os
 import sys
+import shutil
+import subprocess
 import tempfile
 
 import cv2
@@ -35,11 +37,11 @@ MODEL_HEIGHT = 256
 
 
 # ============================================================
-# PAGE CONFIGURATION
+# PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title="Neural Video Compression — Vox Lab",
+    page_title="Neural Video Compression",
     page_icon="◼",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -47,23 +49,33 @@ st.set_page_config(
 
 
 # ============================================================
-# VOX MINIMALIST CUSTOM STYLING
+# EXACT EDITORIAL STYLE
 # ============================================================
 
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Inter:wght@400;500;700&display=swap');
 
-    /* ======================================================
-       GLOBAL STYLES & BACKGROUND
-    ====================================================== */
+    /* ========================================================
+       GLOBAL
+    ======================================================== */
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        -webkit-font-smoothing: antialiased;
+    :root {
+        --black: #111111;
+        --white: #ffffff;
+        --gray: #666666;
+        --light-gray: #eeeeee;
+        --yellow: #ffe500;
+    }
+
+    html,
+    body,
+    [class*="css"],
+    [data-testid="stAppViewContainer"] {
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif !important;
     }
 
     [data-testid="stAppViewContainer"],
@@ -72,265 +84,321 @@ st.markdown(
     }
 
     .main .block-container {
-        max-width: 1100px;
-        padding-top: 40px;
-        padding-bottom: 80px;
+        max-width: 1160px !important;
+        padding-top: 45px !important;
+        padding-bottom: 70px !important;
     }
 
-    /* Hide standard Streamlit header elements */
+    /* ========================================================
+       STREAMLIT HEADER
+    ======================================================== */
+
     [data-testid="stHeader"] {
         background: #ffffff !important;
-        border-bottom: 2px solid #000000;
+        box-shadow: none !important;
+        border-bottom: 1px solid #111111 !important;
     }
 
-    [data-testid="stDecoration"],
-    #MainMenu,
-    footer {
+    [data-testid="stDecoration"] {
         display: none !important;
-        visibility: hidden !important;
     }
 
-    /* ======================================================
-       VOX TYPOGRAPHY & HERO
-    ====================================================== */
-
-    h1 {
-        font-family: 'Space Grotesk', sans-serif !important;
-        color: #000000 !important;
-        font-size: 3.6rem !important;
-        font-weight: 900 !important;
-        letter-spacing: -0.04em !important;
-        line-height: 1.05 !important;
-        margin: 12px 0 16px 0 !important;
-        text-transform: uppercase;
+    #MainMenu {
+        visibility: hidden;
     }
+
+    footer {
+        visibility: hidden;
+    }
+
+    /* ========================================================
+       HERO
+    ======================================================== */
 
     .eyebrow {
         display: inline-block;
-        background: #000000;
-        color: #fff000;
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 0.75rem;
+        background: var(--black);
+        color: var(--yellow);
+        padding: 7px 13px 6px 13px;
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
+        font-size: 0.72rem;
         font-weight: 700;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        padding: 4px 10px;
-        border-radius: 0px;
+        letter-spacing: 0.14em;
+        line-height: 1;
+        margin-bottom: 28px;
     }
 
-    .description {
-        color: #222222;
-        font-size: 1.1rem;
-        line-height: 1.6;
-        font-weight: 400;
+    .hero-title {
+        font-family:
+            Arial Narrow,
+            "Helvetica Neue",
+            Arial,
+            sans-serif !important;
+        color: var(--black);
+        font-size: 4rem;
+        font-weight: 900;
+        letter-spacing: -0.065em;
+        line-height: 0.95;
+        text-transform: uppercase;
+        margin: 0;
+    }
+
+    .hero-description {
+        color: #333333;
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif !important;
+        font-size: 1rem;
+        line-height: 1.65;
         max-width: 760px;
-        margin-bottom: 24px;
+        margin-top: 28px;
     }
 
-    .vox-accent-bar {
+    .hero-rule {
         height: 6px;
-        width: 100%;
-        background: #000000;
-        margin: 28px 0 40px 0;
-        position: relative;
-    }
-    
-    .vox-accent-bar::after {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 120px;
-        height: 100%;
-        background: #fff000;
+        margin: 42px 0 62px 0;
+        background:
+            linear-gradient(
+                to right,
+                var(--yellow) 0%,
+                var(--yellow) 10%,
+                var(--black) 10%,
+                var(--black) 100%
+            );
     }
 
-    /* ======================================================
+    /* ========================================================
        SECTION HEADERS
-    ====================================================== */
+    ======================================================== */
 
-    .section-label {
-        font-family: 'Space Grotesk', sans-serif;
-        color: #000000;
-        font-size: 0.85rem;
-        font-weight: 700;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        margin: 32px 0 14px 0;
+    .section-heading {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        margin-top: 32px;
+        margin-bottom: 18px;
     }
 
-    .section-label::before {
-        content: '//';
-        color: #fff000;
-        background: #000000;
-        padding: 0 4px;
+    .section-marker {
+        display: inline-block;
+        background: var(--black);
+        color: var(--yellow);
+        padding: 3px 6px;
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
+        font-size: 0.8rem;
+        font-weight: 700;
     }
 
-    /* ======================================================
-       UPLOADER (Sharp Minimal Grid)
-    ====================================================== */
+    .section-title {
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
+        color: var(--black);
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+    }
+
+    /* ========================================================
+       UPLOADER
+    ======================================================== */
 
     [data-testid="stFileUploader"] {
-        background: #ffffff !important;
-        border: 2px solid #000000 !important;
-        border-radius: 0px !important;
-        padding: 16px !important;
+        background: #fafafa !important;
+        border: 2px solid var(--black) !important;
+        border-radius: 0 !important;
+        padding: 18px !important;
     }
 
     [data-testid="stFileUploaderDropzone"] {
-        background: #fafafa !important;
-        border: 1px dashed #000000 !important;
-        border-radius: 0px !important;
+        min-height: 85px !important;
+        background: #ffffff !important;
+        border: 1px dashed #222222 !important;
+        border-radius: 0 !important;
     }
 
-    [data-testid="stFileUploaderDropzoneInstructions"] span,
+    [data-testid="stFileUploaderDropzoneInstructions"] {
+        color: var(--black) !important;
+    }
+
+    [data-testid="stFileUploaderDropzoneInstructions"] span {
+        color: var(--black) !important;
+    }
+
     [data-testid="stFileUploaderDropzoneInstructions"] small {
-        color: #000000 !important;
-        font-family: 'Space Grotesk', sans-serif !important;
+        color: #444444 !important;
     }
 
-    [data-testid="stBaseButton-secondary"] {
-        color: #000000 !important;
-        background: #fff000 !important;
-        border: 2px solid #000000 !important;
-        border-radius: 0px !important;
+    [data-testid="stFileUploaderDropzone"] button {
+        background: var(--yellow) !important;
+        color: var(--black) !important;
+        border: 2px solid var(--black) !important;
+        border-radius: 0 !important;
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
         font-weight: 700 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
     }
 
-    [data-testid="stBaseButton-secondary"]:hover {
-        background: #000000 !important;
-        color: #ffffff !important;
+    /* ========================================================
+       NOTE
+    ======================================================== */
+
+    .upload-note {
+        border-left: 4px solid var(--yellow);
+        padding: 12px 15px;
+        margin-top: 18px;
+        color: var(--black);
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
+        font-size: 0.76rem;
+        font-weight: 700;
+        line-height: 1.5;
+        text-transform: uppercase;
     }
 
-    /* ======================================================
-       METRICS & CONTAINERS
-    ====================================================== */
+    /* ========================================================
+       VIDEO LABEL
+    ======================================================== */
+
+    .video-label {
+        color: #555555;
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin: 20px 0 8px 0;
+    }
+
+    /* ========================================================
+       METRICS
+    ======================================================== */
 
     [data-testid="stMetric"] {
         background: #ffffff !important;
-        border: 2px solid #000000 !important;
-        border-radius: 0px !important;
-        padding: 16px 20px !important;
-        box-shadow: 4px 4px 0px #000000;
+        border-top: 2px solid var(--black) !important;
+        border-bottom: 1px solid #cccccc !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-radius: 0 !important;
+        padding: 13px 0 !important;
     }
 
     [data-testid="stMetricLabel"] {
-        color: #000000 !important;
-        font-family: 'Space Grotesk', sans-serif !important;
-        font-size: 0.72rem !important;
+        color: #666666 !important;
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
+        font-size: 0.68rem !important;
         font-weight: 700 !important;
-        letter-spacing: 0.12em !important;
+        letter-spacing: 0.08em !important;
         text-transform: uppercase !important;
     }
 
     [data-testid="stMetricValue"] {
-        color: #000000 !important;
-        font-family: 'Space Grotesk', sans-serif !important;
-        font-size: 1.75rem !important;
-        font-weight: 900 !important;
+        color: var(--black) !important;
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
     }
 
-    /* ======================================================
-       BUTTONS (Vox Punchy Action Style)
-    ====================================================== */
+    /* ========================================================
+       BUTTONS
+    ======================================================== */
 
     .stButton > button {
         width: 100%;
-        min-height: 52px;
-        border-radius: 0px !important;
-        border: 2px solid #000000 !important;
-        background: #000000 !important;
-        color: #ffffff !important;
-        font-family: 'Space Grotesk', sans-serif !important;
-        font-size: 1rem !important;
+        min-height: 50px;
+        border-radius: 0 !important;
+        border: 2px solid var(--black) !important;
+        background: var(--black) !important;
+        color: var(--white) !important;
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
+        font-size: 0.78rem !important;
         font-weight: 700 !important;
-        letter-spacing: 0.1em !important;
+        letter-spacing: 0.08em !important;
         text-transform: uppercase !important;
-        transition: all 0.15s ease-in-out;
-        box-shadow: 4px 4px 0px #fff000;
     }
 
     .stButton > button:hover {
-        background: #fff000 !important;
-        color: #000000 !important;
-        border-color: #000000 !important;
-        box-shadow: 4px 4px 0px #000000;
+        background: var(--yellow) !important;
+        border-color: var(--black) !important;
+        color: var(--black) !important;
     }
 
     .stDownloadButton > button {
         width: 100%;
-        min-height: 52px;
-        border-radius: 0px !important;
-        border: 2px solid #000000 !important;
-        background: #ffffff !important;
-        color: #000000 !important;
-        font-family: 'Space Grotesk', sans-serif !important;
-        font-size: 1rem !important;
+        min-height: 48px;
+        border-radius: 0 !important;
+        border: 2px solid var(--black) !important;
+        background: var(--white) !important;
+        color: var(--black) !important;
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
         font-weight: 700 !important;
-        letter-spacing: 0.08em !important;
         text-transform: uppercase !important;
-        box-shadow: 4px 4px 0px #000000;
     }
 
     .stDownloadButton > button:hover {
-        background: #000000 !important;
-        color: #fff000 !important;
+        background: var(--black) !important;
+        color: var(--white) !important;
     }
 
-    /* ======================================================
-       PROGRESS & STATUS
-    ====================================================== */
-
-    .stProgress > div > div > div > div {
-        background-color: #fff000 !important;
-        border-top: 2px solid #000000;
-        border-bottom: 2px solid #000000;
-    }
+    /* ========================================================
+       ALERTS
+    ======================================================== */
 
     [data-testid="stAlert"] {
-        border-radius: 0px !important;
-        border: 2px solid #000000 !important;
-        background: #ffffff !important;
-        color: #000000 !important;
+        border-radius: 0 !important;
     }
 
-    /* ======================================================
-       DIVIDER & FOOTER
-    ====================================================== */
+    /* ========================================================
+       DIVIDERS
+    ======================================================== */
 
     hr {
         border: none !important;
-        border-top: 2px solid #000000 !important;
-        margin: 40px 0 !important;
+        border-top: 1px solid #cccccc !important;
+        margin: 35px 0 !important;
     }
 
-    .fine-print {
-        color: #000000;
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        border-left: 3px solid #fff000;
-        padding-left: 10px;
-    }
+    /* ========================================================
+       SMALL TEXT
+    ======================================================== */
 
-    .video-container-label {
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        margin-bottom: 8px;
-        background: #000000;
-        color: #ffffff;
-        display: inline-block;
-        padding: 2px 8px;
+    .small-note {
+        color: #666666;
+        font-family:
+            "Courier New",
+            Courier,
+            monospace !important;
+        font-size: 0.72rem;
+        line-height: 1.55;
     }
 
     </style>
@@ -340,14 +408,15 @@ st.markdown(
 
 
 # ============================================================
-# MODEL LOAD
+# MODEL
 # ============================================================
 
 @st.cache_resource
 def load_model():
+
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(
-            f"Model checkpoint not found:\n{MODEL_PATH}"
+            f"Checkpoint not found:\n{MODEL_PATH}"
         )
 
     model = NeuralVideoCompressionModel(
@@ -369,10 +438,11 @@ def load_model():
 
 
 # ============================================================
-# PREPROCESS
+# FRAME PREPROCESSING
 # ============================================================
 
 def preprocess_frame(frame):
+
     frame_rgb = cv2.cvtColor(
         frame,
         cv2.COLOR_BGR2RGB
@@ -398,10 +468,15 @@ def preprocess_frame(frame):
 
 
 # ============================================================
-# RESTORE
+# FRAME RESTORATION
 # ============================================================
 
-def restore_frame(tensor, width, height):
+def restore_frame(
+    tensor,
+    width,
+    height
+):
+
     image = (
         tensor[0]
         .detach()
@@ -429,7 +504,62 @@ def restore_frame(tensor, width, height):
 
 
 # ============================================================
-# HEADER
+# FFMPEG
+# ============================================================
+
+def get_ffmpeg_path():
+
+    path = shutil.which("ffmpeg")
+
+    if path is None:
+        raise RuntimeError(
+            "FFmpeg is not available."
+        )
+
+    return path
+
+
+def encode_browser_video(
+    input_path,
+    output_path
+):
+
+    ffmpeg = get_ffmpeg_path()
+
+    command = [
+        ffmpeg,
+        "-y",
+        "-i",
+        input_path,
+        "-c:v",
+        "libx264",
+        "-preset",
+        "medium",
+        "-crf",
+        "23",
+        "-pix_fmt",
+        "yuv420p",
+        "-movflags",
+        "+faststart",
+        output_path
+    ]
+
+    result = subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    if result.returncode != 0:
+
+        raise RuntimeError(
+            result.stderr[-4000:]
+        )
+
+
+# ============================================================
+# HERO
 # ============================================================
 
 st.markdown(
@@ -437,20 +567,24 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("Neural Video Compression")
+st.markdown(
+    '<div class="hero-title">NEURAL VIDEO COMPRESSION</div>',
+    unsafe_allow_html=True
+)
 
 st.markdown(
     """
-    <div class="description">
-        A learned frame-reconstruction system utilizing neural motion estimation, 
-        residual coding, and high-density latent representation.
+    <div class="hero-description">
+        A learned frame-reconstruction system utilizing neural
+        motion estimation, residual coding, and latent
+        representation.
     </div>
     """,
     unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="vox-accent-bar"></div>',
+    '<div class="hero-rule"></div>',
     unsafe_allow_html=True
 )
 
@@ -460,26 +594,34 @@ st.markdown(
 # ============================================================
 
 st.markdown(
-    '<div class="section-label">01 / INPUT VIDEO</div>',
+    """
+    <div class="section-heading">
+        <span class="section-marker">//</span>
+        <span class="section-title">01 / INPUT VIDEO</span>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
 uploaded_file = st.file_uploader(
-    "Choose video",
+    "Upload",
     type=["mp4", "webm", "avi", "mov"],
     label_visibility="collapsed"
 )
 
+
 if uploaded_file is None:
+
     st.markdown(
         """
-        <div class="fine-print">
-            <br>
-            Upload a video file to run frame reconstruction through the trained neural model.
+        <div class="upload-note">
+            Upload a video file to run frame reconstruction
+            through the trained neural model.
         </div>
         """,
         unsafe_allow_html=True
     )
+
     st.stop()
 
 
@@ -487,103 +629,148 @@ if uploaded_file is None:
 # SAVE INPUT
 # ============================================================
 
-suffix = os.path.splitext(uploaded_file.name)[1]
+suffix = os.path.splitext(
+    uploaded_file.name
+)[1]
 
-input_file = tempfile.NamedTemporaryFile(
+input_temp = tempfile.NamedTemporaryFile(
     delete=False,
     suffix=suffix
 )
 
-input_file.write(uploaded_file.getvalue())
-input_file.close()
+input_temp.write(
+    uploaded_file.getvalue()
+)
 
-input_path = input_file.name
+input_temp.close()
+
+input_path = input_temp.name
 
 
 # ============================================================
-# READ VIDEO INFORMATION
+# VIDEO INFORMATION
 # ============================================================
 
-cap = cv2.VideoCapture(input_path)
+cap = cv2.VideoCapture(
+    input_path
+)
 
 if not cap.isOpened():
-    st.error("Could not open the uploaded video.")
+
+    st.error(
+        "Could not open the uploaded video."
+    )
+
     st.stop()
 
-fps = cap.get(cv2.CAP_PROP_FPS)
+
+fps = cap.get(
+    cv2.CAP_PROP_FPS
+)
+
 if fps <= 0:
     fps = 30.0
 
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+width = int(
+    cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+)
+
+height = int(
+    cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+)
+
+frame_count = int(
+    cap.get(cv2.CAP_PROP_FRAME_COUNT)
+)
 
 cap.release()
 
 
 # ============================================================
-# ORIGINAL VIDEO
+# ORIGINAL
 # ============================================================
 
 st.markdown(
-    '<div class="video-container-label">SOURCE MEDIA</div>',
+    '<div class="video-label">ORIGINAL VIDEO</div>',
     unsafe_allow_html=True
 )
 
-st.video(uploaded_file.getvalue())
+st.video(
+    uploaded_file.getvalue()
+)
 
 
 # ============================================================
-# INFORMATION METRICS
+# VIDEO INFO
 # ============================================================
 
 st.markdown(
-    '<div class="section-label">02 / VIDEO SPECIFICATIONS</div>',
+    '<div class="video-label">VIDEO INFORMATION</div>',
     unsafe_allow_html=True
 )
 
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    st.metric("Resolution", f"{width} × {height}")
+    st.metric(
+        "Resolution",
+        f"{width} × {height}"
+    )
 
 with c2:
-    st.metric("Frame Rate", f"{fps:.2f} FPS")
+    st.metric(
+        "FPS",
+        f"{fps:.2f}"
+    )
 
 with c3:
-    st.metric("Total Frames", f"{frame_count:,}")
-
-st.write("")
+    st.metric(
+        "Frames",
+        f"{frame_count:,}"
+    )
 
 
 # ============================================================
-# MODEL CONFIGURATION METRICS
+# MODEL INFO
 # ============================================================
 
 st.markdown(
-    '<div class="section-label">03 / ARCHITECTURE PARAMETERS</div>',
+    '<div class="video-label">MODEL</div>',
     unsafe_allow_html=True
 )
 
 m1, m2, m3 = st.columns(3)
 
 with m1:
-    st.metric("Architecture", "CNN + Autoencoder")
+    st.metric(
+        "Architecture",
+        "CNN + Autoencoder"
+    )
 
 with m2:
-    st.metric("Model Grid", "448 × 256")
+    st.metric(
+        "Input",
+        "448 × 256"
+    )
 
 with m3:
-    st.metric("Weights Status", "Trained Scratch")
+    st.metric(
+        "Training",
+        "From Scratch"
+    )
 
-st.write("")
+
+st.divider()
 
 
 # ============================================================
-# RUN COMPRESSION
+# RUN BUTTON
 # ============================================================
 
-run = st.button("EXECUTE NEURAL COMPRESSION")
+run = st.button(
+    "Run Neural Compression"
+)
 
 if not run:
     st.stop()
@@ -593,74 +780,120 @@ if not run:
 # LOAD MODEL
 # ============================================================
 
-with st.spinner("Loading neural network weights..."):
+with st.spinner(
+    "Loading trained model..."
+):
+
     try:
         model = load_model()
+
     except Exception as error:
-        st.error(f"Model loading failed: {error}")
+
+        st.error(
+            f"Model loading failed:\n{error}"
+        )
+
         st.stop()
 
 
 # ============================================================
-# OUTPUT FILE PREPARATION
+# TEMPORARY FILES
 # ============================================================
 
-output_file = tempfile.NamedTemporaryFile(
+raw_temp = tempfile.NamedTemporaryFile(
+    delete=False,
+    suffix=".avi"
+)
+
+raw_temp.close()
+
+raw_output_path = raw_temp.name
+
+
+final_temp = tempfile.NamedTemporaryFile(
     delete=False,
     suffix=".mp4"
 )
-output_file.close()
-output_path = output_file.name
 
-cap = cv2.VideoCapture(input_path)
-if not cap.isOpened():
-    st.error("Could not reopen the uploaded video.")
-    st.stop()
+final_temp.close()
+
+final_output_path = final_temp.name
+
+
+# ============================================================
+# OPEN INPUT
+# ============================================================
+
+cap = cv2.VideoCapture(
+    input_path
+)
 
 writer = cv2.VideoWriter(
-    output_path,
-    cv2.VideoWriter_fourcc(*"mp4v"),
+    raw_output_path,
+    cv2.VideoWriter_fourcc(*"MJPG"),
     fps,
     (width, height)
 )
 
 
 # ============================================================
-# FIRST FRAME PROCESS
+# FIRST FRAME
 # ============================================================
 
 success, frame = cap.read()
+
 if not success:
+
     cap.release()
     writer.release()
-    st.error("The uploaded video contains no readable frames.")
+
+    st.error(
+        "The uploaded video contains no readable frames."
+    )
+
     st.stop()
 
+
 writer.write(frame)
-previous_tensor = preprocess_frame(frame)
+
+previous_tensor = preprocess_frame(
+    frame
+)
+
 processed_frames = 1
 
 
 # ============================================================
-# PROCESSING LOOP
+# PROCESS
 # ============================================================
 
 st.markdown(
-    '<div class="section-label">04 / FRAME RECONSTRUCTION PROGRESS</div>',
+    '<div class="section-heading"><span class="section-marker">//</span><span class="section-title">02 / NEURAL RECONSTRUCTION</span></div>',
     unsafe_allow_html=True
 )
 
 progress = st.progress(0)
+
 progress_text = st.empty()
 
+
 with torch.no_grad():
+
     while True:
+
         success, frame = cap.read()
+
         if not success:
             break
 
-        current_tensor = preprocess_frame(frame)
-        outputs = model(previous_tensor, current_tensor)
+        current_tensor = preprocess_frame(
+            frame
+        )
+
+        outputs = model(
+            previous_tensor,
+            current_tensor
+        )
 
         reconstructed = restore_frame(
             outputs["reconstructed_frame"],
@@ -668,76 +901,135 @@ with torch.no_grad():
             height
         )
 
-        writer.write(reconstructed)
+        writer.write(
+            reconstructed
+        )
+
         previous_tensor = current_tensor
+
         processed_frames += 1
 
-        progress_value = min(
-            processed_frames / max(frame_count, 1),
-            1.0
+        progress.progress(
+            min(
+                processed_frames
+                / max(frame_count, 1),
+                1.0
+            )
         )
 
-        progress.progress(progress_value)
         progress_text.caption(
-            f"STATUS: {processed_frames:,} / {frame_count:,} FRAMES PROCESSED"
+            f"{processed_frames:,} / "
+            f"{frame_count:,} frames"
         )
+
 
 cap.release()
 writer.release()
 
 
 # ============================================================
-# RESULTS & OUTPUT
+# WEB ENCODING
 # ============================================================
 
-st.success(
-    f"COMPRESSION COMPLETE · {processed_frames:,} FRAMES RECONSTRUCTED"
-)
-
 st.markdown(
-    '<div class="section-label">05 / RECONSTRUCTED OUTPUT</div>',
+    '<div class="section-heading"><span class="section-marker">//</span><span class="section-title">03 / WEB ENCODING</span></div>',
     unsafe_allow_html=True
 )
 
-st.video(output_path)
+with st.spinner(
+    "Encoding browser-compatible MP4..."
+):
+
+    try:
+
+        encode_browser_video(
+            raw_output_path,
+            final_output_path
+        )
+
+    except Exception as error:
+
+        st.error(
+            f"Encoding failed:\n{error}"
+        )
+
+        st.stop()
 
 
 # ============================================================
-# OUTPUT METRICS
+# FINAL VIDEO
 # ============================================================
 
-c1, c2, c3 = st.columns(3)
+with open(
+    final_output_path,
+    "rb"
+) as file:
 
-with c1:
-    st.metric("Output Resolution", f"{width} × {height}")
+    final_video = file.read()
 
-with c2:
-    st.metric("Processed Frames", f"{processed_frames:,}")
 
-with c3:
-    st.metric("Target Rate", f"{fps:.2f} FPS")
+st.success(
+    f"Processing complete · "
+    f"{processed_frames:,} frames reconstructed."
+)
+
+
+st.markdown(
+    '<div class="section-heading"><span class="section-marker">//</span><span class="section-title">04 / RECONSTRUCTED VIDEO</span></div>',
+    unsafe_allow_html=True
+)
+
+st.video(
+    final_video
+)
+
+
+# ============================================================
+# OUTPUT INFO
+# ============================================================
+
+o1, o2, o3 = st.columns(3)
+
+with o1:
+    st.metric(
+        "Resolution",
+        f"{width} × {height}"
+    )
+
+with o2:
+    st.metric(
+        "FPS",
+        f"{fps:.2f}"
+    )
+
+with o3:
+    st.metric(
+        "Frames",
+        f"{processed_frames:,}"
+    )
+
+
+# ============================================================
+# DOWNLOAD
+# ============================================================
 
 st.write("")
 
+st.download_button(
+    label="Download Reconstructed Video",
+    data=final_video,
+    file_name="reconstructed_video.mp4",
+    mime="video/mp4"
+)
 
-# ============================================================
-# DOWNLOAD BUTTON
-# ============================================================
-
-with open(output_path, "rb") as file:
-    st.download_button(
-        "DOWNLOAD RECONSTRUCTED VIDEO",
-        data=file,
-        file_name="reconstructed_video.mp4",
-        mime="video/mp4"
-    )
 
 st.divider()
 
 st.markdown(
     """
-    <div class="fine-print">
-        NEURAL VIDEO RECONSTRUCTION CODEC // INFERENCE MODE ONLY // TRAINED WITHOUT PRETRAINED WEIGHTS
+    <div class="small-note">
+        OUTPUT: H.264 MP4 · BROWSER COMPATIBLE<br>
+        LEARNED BPP IS A MODEL RATE ESTIMATE, NOT THE FINAL MP4 BITRATE.
     </div>
     """,
     unsafe_allow_html=True
