@@ -12,9 +12,7 @@ import torch
 # PATHS
 # ============================================================
 
-APP_DIR = os.path.dirname(
-    os.path.abspath(__file__)
-)
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, APP_DIR)
 
@@ -52,13 +50,243 @@ st.set_page_config(
 
 
 # ============================================================
-# LOAD MODEL
+# EDITORIAL WHITE DESIGN
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+
+    /* --------------------------------------------------------
+       Global
+    -------------------------------------------------------- */
+
+    .stApp {
+        background-color: #ffffff;
+        color: #111111;
+    }
+
+    .block-container {
+        max-width: 1180px;
+        padding-top: 42px;
+        padding-bottom: 60px;
+    }
+
+    html,
+    body,
+    [class*="css"] {
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
+    }
+
+    /* --------------------------------------------------------
+       Main heading
+    -------------------------------------------------------- */
+
+    h1 {
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif !important;
+
+        color: #111111 !important;
+        font-size: 3.2rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.055em !important;
+        line-height: 1.0 !important;
+        margin-bottom: 10px !important;
+    }
+
+    h2 {
+        color: #111111 !important;
+        font-size: 1.35rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
+    }
+
+    h3 {
+        color: #111111 !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+    }
+
+    p {
+        color: #333333;
+    }
+
+    /* --------------------------------------------------------
+       Hide Streamlit chrome
+    -------------------------------------------------------- */
+
+    #MainMenu {
+        visibility: hidden;
+    }
+
+    footer {
+        visibility: hidden;
+    }
+
+    header {
+        background-color: #ffffff;
+    }
+
+    /* --------------------------------------------------------
+       Hero rule
+    -------------------------------------------------------- */
+
+    .hero-rule {
+        width: 100%;
+        height: 5px;
+        background-color: #d9272e;
+        margin: 22px 0 30px 0;
+    }
+
+    .hero-meta {
+        color: #777777;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+
+    /* --------------------------------------------------------
+       File uploader
+    -------------------------------------------------------- */
+
+    [data-testid="stFileUploader"] {
+        background: #f8f8f8;
+        border: 1px solid #dddddd;
+        border-radius: 0;
+        padding: 8px;
+    }
+
+    [data-testid="stFileUploaderDropzone"] {
+        background: #ffffff;
+    }
+
+    /* --------------------------------------------------------
+       Video containers
+    -------------------------------------------------------- */
+
+    .video-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: #777777;
+        margin-bottom: 8px;
+    }
+
+    /* --------------------------------------------------------
+       Metrics
+    -------------------------------------------------------- */
+
+    [data-testid="stMetric"] {
+        background: #ffffff;
+        border-top: 1px solid #111111;
+        border-bottom: 1px solid #dddddd;
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+        padding: 12px 0 10px 0;
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #777777 !important;
+        font-size: 0.72rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #111111 !important;
+        font-size: 1.45rem !important;
+        font-weight: 700 !important;
+    }
+
+    /* --------------------------------------------------------
+       Buttons
+    -------------------------------------------------------- */
+
+    .stButton > button {
+        width: 100%;
+        min-height: 48px;
+        border-radius: 0;
+        border: 1px solid #111111;
+        background: #111111;
+        color: #ffffff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .stButton > button:hover {
+        background: #d9272e;
+        border-color: #d9272e;
+        color: #ffffff;
+    }
+
+    .stDownloadButton > button {
+        width: 100%;
+        min-height: 46px;
+        border-radius: 0;
+        border: 1px solid #111111;
+        background: #ffffff;
+        color: #111111;
+        font-weight: 700;
+    }
+
+    .stDownloadButton > button:hover {
+        background: #111111;
+        color: #ffffff;
+    }
+
+    /* --------------------------------------------------------
+       Divider
+    -------------------------------------------------------- */
+
+    hr {
+        border: none;
+        border-top: 1px solid #dddddd;
+        margin: 28px 0;
+    }
+
+    /* --------------------------------------------------------
+       Information text
+    -------------------------------------------------------- */
+
+    .small-note {
+        color: #777777;
+        font-size: 0.76rem;
+        line-height: 1.55;
+    }
+
+    /* --------------------------------------------------------
+       Success message
+    -------------------------------------------------------- */
+
+    [data-testid="stAlert"] {
+        border-radius: 0 !important;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ============================================================
+# MODEL LOADING
 # ============================================================
 
 @st.cache_resource
 def load_model():
 
     if not os.path.exists(MODEL_PATH):
+
         raise FileNotFoundError(
             f"Checkpoint not found:\n{MODEL_PATH}"
         )
@@ -82,7 +310,7 @@ def load_model():
 
 
 # ============================================================
-# PREPROCESS FRAME
+# FRAME PREPROCESSING
 # ============================================================
 
 def preprocess_frame(frame):
@@ -117,7 +345,7 @@ def preprocess_frame(frame):
 
 
 # ============================================================
-# RESTORE FRAME
+# FRAME RESTORATION
 # ============================================================
 
 def restore_frame(
@@ -142,7 +370,10 @@ def restore_frame(
 
     image = cv2.resize(
         image,
-        (width, height),
+        (
+            width,
+            height
+        ),
         interpolation=cv2.INTER_CUBIC
     )
 
@@ -153,23 +384,30 @@ def restore_frame(
 
 
 # ============================================================
-# HEADER
+# HERO
 # ============================================================
+
+st.markdown(
+    '<div class="hero-meta">RESEARCH PROTOTYPE · DEEP LEARNING</div>',
+    unsafe_allow_html=True
+)
 
 st.title("Neural Video Compression")
 
-st.caption(
-    "Deep learning based video reconstruction"
+st.markdown(
+    '<div class="hero-rule"></div>',
+    unsafe_allow_html=True
 )
-
-st.divider()
 
 
 # ============================================================
 # UPLOAD
 # ============================================================
 
-st.subheader("Upload Video")
+st.markdown(
+    '<div class="video-label">INPUT VIDEO</div>',
+    unsafe_allow_html=True
+)
 
 uploaded_file = st.file_uploader(
     "Choose a video",
@@ -178,20 +416,30 @@ uploaded_file = st.file_uploader(
         "webm",
         "avi",
         "mov"
-    ]
+    ],
+    label_visibility="collapsed"
 )
+
 
 if uploaded_file is None:
 
-    st.info(
-        "Upload a video to run the trained model."
+    st.markdown(
+        """
+        <div class="small-note">
+            Upload a video to run inference with the trained
+            neural compression model.
+            <br><br>
+            Supported formats: MP4 · WEBM · AVI · MOV
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.stop()
 
 
 # ============================================================
-# SAVE INPUT
+# SAVE INPUT TEMPORARILY
 # ============================================================
 
 suffix = os.path.splitext(
@@ -262,7 +510,10 @@ cap.release()
 # ORIGINAL VIDEO
 # ============================================================
 
-st.subheader("Original Video")
+st.markdown(
+    '<div class="video-label">ORIGINAL</div>',
+    unsafe_allow_html=True
+)
 
 st.video(
     uploaded_file.getvalue()
@@ -273,26 +524,68 @@ st.video(
 # VIDEO INFORMATION
 # ============================================================
 
-st.subheader("Video Information")
+st.markdown(
+    '<div class="video-label">VIDEO INFORMATION</div>',
+    unsafe_allow_html=True
+)
 
-col1, col2, col3 = st.columns(3)
+info1, info2, info3 = st.columns(3)
 
-with col1:
+with info1:
+
     st.metric(
         "Resolution",
         f"{width} × {height}"
     )
 
-with col2:
+with info2:
+
     st.metric(
         "Frame Rate",
         f"{fps:.2f} FPS"
     )
 
-with col3:
+with info3:
+
     st.metric(
         "Frames",
         frame_count
+    )
+
+
+st.write("")
+
+
+# ============================================================
+# MODEL INFORMATION
+# ============================================================
+
+st.markdown(
+    '<div class="video-label">MODEL</div>',
+    unsafe_allow_html=True
+)
+
+model1, model2, model3 = st.columns(3)
+
+with model1:
+
+    st.metric(
+        "Architecture",
+        "CNN + Autoencoder"
+    )
+
+with model2:
+
+    st.metric(
+        "Model Input",
+        "448 × 256"
+    )
+
+with model3:
+
+    st.metric(
+        "Training",
+        "From Scratch"
     )
 
 
@@ -300,7 +593,7 @@ st.divider()
 
 
 # ============================================================
-# RUN MODEL
+# RUN
 # ============================================================
 
 run_compression = st.button(
@@ -315,17 +608,21 @@ if not run_compression:
 # LOAD MODEL
 # ============================================================
 
-try:
+with st.spinner(
+    "Loading trained model..."
+):
 
-    model = load_model()
+    try:
 
-except Exception as error:
+        model = load_model()
 
-    st.error(
-        f"Model loading failed: {error}"
-    )
+    except Exception as error:
 
-    st.stop()
+        st.error(
+            f"Model loading failed: {error}"
+        )
+
+        st.stop()
 
 
 # ============================================================
@@ -343,7 +640,7 @@ output_path = output_temp.name
 
 
 # ============================================================
-# OPEN VIDEO
+# PROCESS VIDEO
 # ============================================================
 
 cap = cv2.VideoCapture(
@@ -400,10 +697,13 @@ processed_frames = 1
 
 
 # ============================================================
-# PROCESS VIDEO
+# PROCESS
 # ============================================================
 
-st.subheader("Processing")
+st.markdown(
+    '<div class="video-label">PROCESSING</div>',
+    unsafe_allow_html=True
+)
 
 progress = st.progress(0)
 
@@ -459,10 +759,9 @@ with torch.no_grad():
             progress_value
         )
 
-        progress_text.write(
-            f"Processing frame "
+        progress_text.caption(
             f"{processed_frames} / "
-            f"{frame_count}"
+            f"{frame_count} frames"
         )
 
 
@@ -471,20 +770,23 @@ writer.release()
 
 
 # ============================================================
-# RESULT
+# COMPLETE
 # ============================================================
 
 st.success(
-    f"Compression complete — "
-    f"{processed_frames} frames processed."
+    f"Processing complete — "
+    f"{processed_frames} frames reconstructed."
 )
 
 
 # ============================================================
-# RECONSTRUCTED VIDEO
+# OUTPUT
 # ============================================================
 
-st.subheader("Reconstructed Video")
+st.markdown(
+    '<div class="video-label">RECONSTRUCTED OUTPUT</div>',
+    unsafe_allow_html=True
+)
 
 st.video(
     output_path
@@ -495,23 +797,24 @@ st.video(
 # OUTPUT INFORMATION
 # ============================================================
 
-st.subheader("Output Information")
-
 out1, out2, out3 = st.columns(3)
 
 with out1:
+
     st.metric(
         "Resolution",
         f"{width} × {height}"
     )
 
 with out2:
+
     st.metric(
-        "Frames Processed",
+        "Frames",
         processed_frames
     )
 
 with out3:
+
     st.metric(
         "Frame Rate",
         f"{fps:.2f} FPS"
@@ -535,3 +838,16 @@ with open(
         file_name="reconstructed_video.mp4",
         mime="video/mp4"
     )
+
+
+st.divider()
+
+st.markdown(
+    """
+    <div class="small-note">
+        Neural video reconstruction using the trained model.
+        The model was trained from scratch without pretrained weights.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
