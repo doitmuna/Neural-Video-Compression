@@ -1,6 +1,7 @@
 import os
 import sys
 import tempfile
+from textwrap import dedent
 
 import cv2
 import numpy as np
@@ -51,12 +52,8 @@ st.set_page_config(
 # ============================================================
 
 st.markdown(
-    """
+    dedent("""
     <style>
-
-    /* ========================================================
-       GLOBAL
-    ======================================================== */
 
     [data-testid="stAppViewContainer"],
     [data-testid="stMain"],
@@ -84,7 +81,7 @@ st.markdown(
 
 
     /* ========================================================
-       STREAMLIT CHROME
+       STREAMLIT HEADER
     ======================================================== */
 
     [data-testid="stHeader"] {
@@ -106,7 +103,7 @@ st.markdown(
 
 
     /* ========================================================
-       TOP BRAND BAR
+       BRAND BAR
     ======================================================== */
 
     .brand-bar {
@@ -202,7 +199,7 @@ st.markdown(
 
 
     /* ========================================================
-       SECTION HEADER
+       SECTION HEADERS
     ======================================================== */
 
     .section-header {
@@ -440,7 +437,9 @@ st.markdown(
 
     hr {
         border: none !important;
+
         border-top: 1px solid #dddddd !important;
+
         margin: 40px 0 !important;
     }
 
@@ -448,6 +447,7 @@ st.markdown(
         color: #888888;
 
         font-size: 0.69rem;
+
         line-height: 1.55;
 
         margin-top: 9px;
@@ -484,7 +484,7 @@ st.markdown(
     }
 
     </style>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
@@ -592,7 +592,7 @@ def restore_frame(
 # ============================================================
 
 st.markdown(
-    """
+    dedent("""
     <div class="brand-bar">
 
         <div class="brand">
@@ -604,7 +604,7 @@ st.markdown(
         </div>
 
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
@@ -619,13 +619,13 @@ st.markdown(
 )
 
 st.markdown(
-    """
+    dedent("""
     <div class="description">
         A learned video reconstruction system that uses neural
         motion estimation, residual representation, and latent
         feature compression to reconstruct video frames.
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
@@ -640,12 +640,12 @@ st.markdown(
 # ============================================================
 
 st.markdown(
-    """
+    dedent("""
     <div class="section-header">
         <span class="section-number">01</span>
         <span class="section-title">Input Video</span>
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
@@ -658,13 +658,12 @@ uploaded_file = st.file_uploader(
 if uploaded_file is None:
 
     st.markdown(
-        """
+        dedent("""
         <div class="fine-print">
-            MP4 · WEBM · AVI · MOV
-            <br>
+            MP4 · WEBM · AVI · MOV<br>
             Upload a video to run the trained neural model.
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 
@@ -722,16 +721,13 @@ width = int(
     cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 )
 
-
 height = int(
     cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 )
 
-
 frame_count = int(
     cap.get(cv2.CAP_PROP_FRAME_COUNT)
 )
-
 
 cap.release()
 
@@ -755,17 +751,16 @@ st.video(
 # ============================================================
 
 st.markdown(
-    """
+    dedent("""
     <div class="section-header">
         <span class="section-number">02</span>
         <span class="section-title">Video Information</span>
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
 c1, c2, c3 = st.columns(3)
-
 
 with c1:
 
@@ -774,14 +769,12 @@ with c1:
         f"{width} × {height}",
     )
 
-
 with c2:
 
     st.metric(
         "Frame Rate",
         f"{fps:.2f} FPS",
     )
-
 
 with c3:
 
@@ -791,25 +784,21 @@ with c3:
     )
 
 
-st.write("")
-
-
 # ============================================================
 # MODEL
 # ============================================================
 
 st.markdown(
-    """
+    dedent("""
     <div class="section-header">
         <span class="section-number">03</span>
         <span class="section-title">Model</span>
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
 m1, m2, m3 = st.columns(3)
-
 
 with m1:
 
@@ -818,7 +807,6 @@ with m1:
         "CNN + Autoencoder",
     )
 
-
 with m2:
 
     st.metric(
@@ -826,14 +814,12 @@ with m2:
         "448 × 256",
     )
 
-
 with m3:
 
     st.metric(
         "Weights",
         "From Scratch",
     )
-
 
 st.write("")
 
@@ -845,7 +831,6 @@ st.write("")
 run = st.button(
     "Run Neural Compression"
 )
-
 
 if not run:
     st.stop()
@@ -917,7 +902,6 @@ writer = cv2.VideoWriter(
 
 success, frame = cap.read()
 
-
 if not success:
 
     cap.release()
@@ -946,17 +930,17 @@ processed_frames = 1
 # ============================================================
 
 st.markdown(
-    """
+    dedent("""
     <div class="section-header">
         <span class="section-number">04</span>
         <span class="section-title">Processing</span>
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
-
 progress = st.progress(0)
+
 progress_text = st.empty()
 
 
@@ -969,17 +953,14 @@ with torch.no_grad():
         if not success:
             break
 
-
         current_tensor = preprocess_frame(
             frame
         )
 
-
         outputs = model(
             previous_tensor,
-            current_tensor
+            current_tensor,
         )
-
 
         reconstructed = restore_frame(
             outputs["reconstructed_frame"],
@@ -987,28 +968,23 @@ with torch.no_grad():
             height,
         )
 
-
         writer.write(
             reconstructed
         )
-
 
         previous_tensor = current_tensor
 
         processed_frames += 1
 
-
         progress_value = min(
-            processed_frames
-            / max(frame_count, 1),
+            processed_frames /
+            max(frame_count, 1),
             1.0,
         )
-
 
         progress.progress(
             progress_value
         )
-
 
         progress_text.caption(
             f"{processed_frames:,} / "
@@ -1035,21 +1011,19 @@ st.success(
 # ============================================================
 
 st.markdown(
-    """
+    dedent("""
     <div class="section-header">
         <span class="section-number">05</span>
         <span class="section-title">Reconstructed Video</span>
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
-
 
 st.markdown(
     '<div class="video-label">RECONSTRUCTED OUTPUT</div>',
     unsafe_allow_html=True,
 )
-
 
 st.video(
     output_path
@@ -1062,14 +1036,12 @@ st.video(
 
 c1, c2, c3 = st.columns(3)
 
-
 with c1:
 
     st.metric(
         "Resolution",
         f"{width} × {height}",
     )
-
 
 with c2:
 
@@ -1078,14 +1050,12 @@ with c2:
         processed_frames,
     )
 
-
 with c3:
 
     st.metric(
         "Frame Rate",
         f"{fps:.2f} FPS",
     )
-
 
 st.write("")
 
@@ -1114,11 +1084,11 @@ with open(
 st.divider()
 
 st.markdown(
-    """
+    dedent("""
     <div class="fine-print">
         Neural video reconstruction · inference only ·
         trained without pretrained weights.
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
