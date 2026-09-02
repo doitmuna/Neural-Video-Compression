@@ -474,7 +474,6 @@ if uploaded_file is None:
     st.markdown(
         """
         <div class="fine-print">
-            ACCEPTED FORMATS: MP4 · WEBM · AVI · MOV
             <br>
             Upload a video file to run frame reconstruction through the trained neural model.
         </div>
