@@ -31,7 +31,8 @@ MODEL_PATH = os.path.abspath(
 )
 
 DEVICE = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu"
+    "cuda" if torch.cuda.is_available()
+    else "cpu"
 )
 
 MODEL_WIDTH = 448
@@ -51,16 +52,31 @@ st.set_page_config(
 
 
 # ============================================================
-# MINIMAL DARK / MONOSPACE UI
+# CLEAN WHITE STYLE
 # ============================================================
 
 st.markdown(
     """
     <style>
 
-    /* ---------- Global ---------- */
+    /* Main page */
 
-    html, body, [class*="css"] {
+    .stApp {
+        background: #ffffff;
+        color: #111111;
+    }
+
+    .block-container {
+        max-width: 1100px;
+        padding-top: 45px;
+        padding-bottom: 50px;
+    }
+
+    /* Typography */
+
+    html,
+    body,
+    [class*="css"] {
         font-family:
             ui-monospace,
             SFMono-Regular,
@@ -71,18 +87,27 @@ st.markdown(
             monospace;
     }
 
-    .stApp {
-        background: #0b0d10;
-        color: #e6e8eb;
+    h1 {
+        font-family:
+            ui-monospace,
+            SFMono-Regular,
+            Menlo,
+            Monaco,
+            Consolas,
+            "Liberation Mono",
+            monospace !important;
+
+        font-size: 2.2rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.04em !important;
+        color: #111111 !important;
     }
 
-    .block-container {
-        max-width: 1180px;
-        padding-top: 3rem;
-        padding-bottom: 3rem;
+    p {
+        color: #555555;
     }
 
-    /* ---------- Hide Streamlit chrome ---------- */
+    /* Hide Streamlit branding */
 
     #MainMenu {
         visibility: hidden;
@@ -96,135 +121,66 @@ st.markdown(
         visibility: hidden;
     }
 
-    /* ---------- Typography ---------- */
-
-    .hero {
-        border-left: 2px solid #e6e8eb;
-        padding-left: 18px;
-        margin-bottom: 34px;
-    }
-
-    .hero-title {
-        font-size: 2.2rem;
-        font-weight: 700;
-        letter-spacing: -0.04em;
-        line-height: 1.1;
-    }
-
-    .hero-subtitle {
-        margin-top: 9px;
-        color: #8b9199;
-        font-size: 0.88rem;
-        line-height: 1.6;
-    }
-
-    .tag {
-        display: inline-block;
-        margin-top: 12px;
-        padding: 4px 8px;
-        border: 1px solid #30343a;
-        border-radius: 4px;
-        color: #aeb4bc;
-        font-size: 0.72rem;
-        letter-spacing: 0.04em;
-    }
-
-    /* ---------- Upload ---------- */
-
-    .upload-label {
-        color: #8b9199;
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        margin-bottom: 8px;
-    }
-
-    /* ---------- Cards ---------- */
-
-    .panel {
-        border: 1px solid #24282e;
-        border-radius: 8px;
-        background: #0f1216;
-        padding: 14px;
-        margin-bottom: 18px;
-    }
-
-    .panel-title {
-        color: #8b9199;
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        margin-bottom: 12px;
-    }
-
-    /* ---------- Metrics ---------- */
-
-    .metric-box {
-        border-top: 1px solid #24282e;
-        padding-top: 10px;
-        margin-top: 2px;
-    }
-
-    .metric-label {
-        color: #747b84;
-        font-size: 0.68rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-    }
-
-    .metric-value {
-        margin-top: 4px;
-        color: #e6e8eb;
-        font-size: 1.15rem;
-        font-weight: 600;
-    }
-
-    /* ---------- Buttons ---------- */
+    /* Buttons */
 
     .stButton > button {
         width: 100%;
-        border-radius: 5px;
-        border: 1px solid #3a3f46;
-        background: #e6e8eb;
-        color: #0b0d10;
+        border: 1px solid #111111;
+        border-radius: 4px;
+        background: #111111;
+        color: #ffffff;
         font-family: inherit;
         font-weight: 700;
-        letter-spacing: 0.02em;
+        padding: 0.65rem 1rem;
     }
 
     .stButton > button:hover {
-        border-color: #ffffff;
-        background: #ffffff;
-        color: #000000;
+        border-color: #333333;
+        background: #333333;
+        color: #ffffff;
     }
-
-    /* ---------- Download button ---------- */
 
     .stDownloadButton > button {
         width: 100%;
-        border-radius: 5px;
+        border-radius: 4px;
         font-family: inherit;
         font-weight: 600;
     }
 
-    /* ---------- Success ---------- */
+    /* File uploader */
 
-    .status {
-        border: 1px solid #26352b;
-        background: #101711;
-        color: #8fd19a;
+    [data-testid="stFileUploader"] {
+        border: 1px solid #dddddd;
         border-radius: 6px;
-        padding: 10px 12px;
-        margin: 14px 0 20px 0;
-        font-size: 0.78rem;
+        background: #fafafa;
+        padding: 8px;
     }
 
-    /* ---------- Small text ---------- */
+    /* Metrics */
 
-    .fine {
-        color: #676d75;
-        font-size: 0.68rem;
-        line-height: 1.6;
+    [data-testid="stMetric"] {
+        background: #fafafa;
+        border: 1px solid #e5e5e5;
+        border-radius: 5px;
+        padding: 12px;
+    }
+
+    [data-testid="stMetricLabel"] {
+        font-family: inherit;
+        color: #777777;
+    }
+
+    [data-testid="stMetricValue"] {
+        font-family: inherit;
+        color: #111111;
+    }
+
+    /* Divider */
+
+    hr {
+        border: none;
+        border-top: 1px solid #e5e5e5;
+        margin: 28px 0;
     }
 
     </style>
@@ -242,7 +198,7 @@ def load_model():
 
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(
-            f"Model checkpoint not found:\n{MODEL_PATH}"
+            f"Checkpoint not found:\n{MODEL_PATH}"
         )
 
     model = NeuralVideoCompressionModel(
@@ -264,7 +220,7 @@ def load_model():
 
 
 # ============================================================
-# PREPROCESSING
+# PREPROCESS FRAME
 # ============================================================
 
 def preprocess_frame(frame):
@@ -338,110 +294,49 @@ def restore_frame(
 # HEADER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="hero">
-        <div class="hero-title">
-            neural / video compression
-        </div>
+st.title("Neural Video Compression")
 
-        <div class="hero-subtitle">
-            Learned motion estimation + residual coding
-            <br>
-            trained entirely from scratch
-        </div>
-
-        <div class="tag">
-            PYTORCH · CNN · RATE–DISTORTION
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
+st.caption(
+    "Learned motion estimation + residual coding "
+    "trained entirely from scratch."
 )
+
+st.caption(
+    f"Device: {DEVICE.type.upper()}  |  "
+    "Model: CNN + Residual Autoencoder"
+)
+
+st.divider()
 
 
 # ============================================================
-# MODEL STATUS
+# UPLOAD
 # ============================================================
 
-status_col1, status_col2 = st.columns(
-    [3, 1]
-)
-
-with status_col1:
-
-    st.markdown(
-        """
-        <div class="upload-label">
-            input
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with status_col2:
-
-    device_name = (
-        "CUDA"
-        if torch.cuda.is_available()
-        else "CPU"
-    )
-
-    st.markdown(
-        f"""
-        <div style="
-            text-align:right;
-            color:#676d75;
-            font-size:0.68rem;
-            padding-top:3px;
-        ">
-            device: {device_name}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
+st.subheader("Input Video")
 
 uploaded_file = st.file_uploader(
-    "Upload video",
+    "Upload a video",
     type=[
         "mp4",
         "webm",
         "avi",
         "mov"
-    ],
-    label_visibility="collapsed"
+    ]
 )
 
 
 if uploaded_file is None:
 
-    st.markdown(
-        """
-        <div class="panel">
-
-            <div class="panel-title">
-                waiting for video
-            </div>
-
-            <div class="fine">
-                Supported formats:
-                MP4 · WEBM · AVI · MOV
-                <br><br>
-                The uploaded video is processed frame-by-frame
-                using the trained neural compression model.
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
+    st.info(
+        "Upload a video to start neural reconstruction."
     )
 
     st.stop()
 
 
 # ============================================================
-# SAVE UPLOAD
+# SAVE INPUT TEMPORARILY
 # ============================================================
 
 suffix = os.path.splitext(
@@ -463,7 +358,7 @@ input_path = input_temp.name
 
 
 # ============================================================
-# READ VIDEO METADATA
+# READ VIDEO INFORMATION
 # ============================================================
 
 cap = cv2.VideoCapture(
@@ -509,125 +404,82 @@ cap.release()
 
 
 # ============================================================
-# INPUT PREVIEW
+# ORIGINAL VIDEO
 # ============================================================
 
-left, right = st.columns(
-    2,
-    gap="medium"
+st.subheader("Original")
+
+st.video(
+    uploaded_file.getvalue()
 )
 
-with left:
 
-    st.markdown(
-        """
-        <div class="panel-title">
-            original
-        </div>
-        """,
-        unsafe_allow_html=True
+# ============================================================
+# VIDEO INFORMATION
+# ============================================================
+
+st.subheader("Video Information")
+
+info1, info2, info3 = st.columns(3)
+
+with info1:
+    st.metric(
+        "Resolution",
+        f"{width} × {height}"
     )
 
-    st.video(
-        uploaded_file.getvalue()
+with info2:
+    st.metric(
+        "Frame Rate",
+        f"{fps:.2f} FPS"
     )
 
-
-with right:
-
-    st.markdown(
-        """
-        <div class="panel-title">
-            configuration
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        st.markdown(
-            f"""
-            <div class="metric-box">
-                <div class="metric-label">
-                    resolution
-                </div>
-                <div class="metric-value">
-                    {width}×{height}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with c2:
-        st.markdown(
-            f"""
-            <div class="metric-box">
-                <div class="metric-label">
-                    fps
-                </div>
-                <div class="metric-value">
-                    {fps:.0f}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with c3:
-        st.markdown(
-            f"""
-            <div class="metric-box">
-                <div class="metric-label">
-                    frames
-                </div>
-                <div class="metric-value">
-                    {metadata_frame_count}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    st.write("")
-
-    st.markdown(
-        """
-        <div class="fine">
-            Internal model resolution:
-            <b>448×256</b>
-            <br>
-            Motion is estimated between consecutive
-            frames and the remaining residual is
-            reconstructed by the learned autoencoder.
-        </div>
-        """,
-        unsafe_allow_html=True
+with info3:
+    st.metric(
+        "Frames",
+        metadata_frame_count
     )
 
 
 # ============================================================
-# COMPRESS BUTTON
+# MODEL INFORMATION
 # ============================================================
 
-st.write("")
+st.subheader("Model")
 
-compress = st.button(
+model1, model2, model3 = st.columns(3)
+
+with model1:
+    st.metric(
+        "Architecture",
+        "CNN + AE"
+    )
+
+with model2:
+    st.metric(
+        "Internal Resolution",
+        "448 × 256"
+    )
+
+with model3:
+    st.metric(
+        "Training",
+        "From Scratch"
+    )
+
+
+st.divider()
+
+
+# ============================================================
+# RUN BUTTON
+# ============================================================
+
+run_compression = st.button(
     "RUN NEURAL COMPRESSION"
 )
 
-if not compress:
-    st.markdown(
-        """
-        <div class="fine" style="margin-top:10px;">
-            Press the button to start inference.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
+if not run_compression:
     st.stop()
 
 
@@ -663,7 +515,7 @@ output_path = output_temp.name
 
 
 # ============================================================
-# PROCESS VIDEO
+# OPEN INPUT
 # ============================================================
 
 cap = cv2.VideoCapture(
@@ -673,7 +525,7 @@ cap = cv2.VideoCapture(
 if not cap.isOpened():
 
     st.error(
-        "Could not reopen the uploaded video."
+        "Could not reopen uploaded video."
     )
 
     st.stop()
@@ -692,6 +544,10 @@ writer = cv2.VideoWriter(
 )
 
 
+# ============================================================
+# READ FIRST FRAME
+# ============================================================
+
 success, frame = cap.read()
 
 if not success:
@@ -700,16 +556,14 @@ if not success:
     writer.release()
 
     st.error(
-        "The uploaded video contains no readable frames."
+        "The video contains no readable frames."
     )
 
     st.stop()
 
 
-# First frame is kept as reference
-writer.write(
-    frame
-)
+# Keep first frame as reference
+writer.write(frame)
 
 previous_tensor = preprocess_frame(
     frame
@@ -717,9 +571,14 @@ previous_tensor = preprocess_frame(
 
 processed_frames = 1
 
-progress = st.progress(
-    0
-)
+
+# ============================================================
+# PROCESS VIDEO
+# ============================================================
+
+st.subheader("Processing")
+
+progress = st.progress(0)
 
 progress_text = st.empty()
 
@@ -733,8 +592,8 @@ with torch.no_grad():
         if not success:
             break
 
-        current_tensor = preprocess_frame(
-            frame
+        current_tensor = (
+            preprocess_frame(frame)
         )
 
         outputs = model(
@@ -773,9 +632,10 @@ with torch.no_grad():
             progress_value
         )
 
-        progress_text.caption(
-            f"processing frame "
-            f"{processed_frames}"
+        progress_text.write(
+            f"Processing frame "
+            f"{processed_frames} / "
+            f"{metadata_frame_count}"
         )
 
 
@@ -784,32 +644,20 @@ writer.release()
 
 
 # ============================================================
-# RESULT
+# COMPLETION
 # ============================================================
 
-st.markdown(
-    f"""
-    <div class="status">
-        ✓ compression complete ·
-        {processed_frames} frames processed
-    </div>
-    """,
-    unsafe_allow_html=True
+st.success(
+    f"Compression complete — "
+    f"{processed_frames} frames processed."
 )
 
 
 # ============================================================
-# OUTPUT PREVIEW
+# OUTPUT
 # ============================================================
 
-st.markdown(
-    """
-    <div class="panel-title">
-        reconstructed output
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.subheader("Reconstructed Video")
 
 st.video(
     output_path
@@ -817,59 +665,27 @@ st.video(
 
 
 # ============================================================
-# RESULT METRICS
+# OUTPUT INFORMATION
 # ============================================================
 
-st.write("")
+out1, out2, out3 = st.columns(3)
 
-m1, m2, m3 = st.columns(3)
-
-with m1:
-
-    st.markdown(
-        f"""
-        <div class="metric-box">
-            <div class="metric-label">
-                resolution
-            </div>
-            <div class="metric-value">
-                {width}×{height}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
+with out1:
+    st.metric(
+        "Resolution",
+        f"{width} × {height}"
     )
 
-with m2:
-
-    st.markdown(
-        f"""
-        <div class="metric-box">
-            <div class="metric-label">
-                frames processed
-            </div>
-            <div class="metric-value">
-                {processed_frames}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
+with out2:
+    st.metric(
+        "Frames",
+        processed_frames
     )
 
-with m3:
-
-    st.markdown(
-        f"""
-        <div class="metric-box">
-            <div class="metric-label">
-                model input
-            </div>
-            <div class="metric-value">
-                {MODEL_WIDTH}×{MODEL_HEIGHT}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
+with out3:
+    st.metric(
+        "FPS",
+        f"{fps:.2f}"
     )
 
 
@@ -892,13 +708,9 @@ with open(
     )
 
 
-st.markdown(
-    """
-    <div class="fine" style="margin-top:20px;">
-        This application performs inference only.
-        The neural model was trained from scratch;
-        no pretrained weights are used.
-    </div>
-    """,
-    unsafe_allow_html=True
+st.divider()
+
+st.caption(
+    "Inference only. No pretrained model or "
+    "pretrained weights are used."
 )
