@@ -1,6 +1,6 @@
 ## Live Demo
 
-[![Open Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-red?style=for-the-badge&logo=streamlit)](YOUR_STREAMLIT_URL)
+[![Open Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-red?style=for-the-badge&logo=streamlit)](https://neural-video-compression-doitmuna.streamlit.app/)
 
 Try the trained neural video compression model directly in your browser.
 # Neural Video Compression
