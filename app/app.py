@@ -45,147 +45,9 @@ MODEL_HEIGHT = 256
 
 st.set_page_config(
     page_title="Neural Video Compression",
-    page_icon="▣",
+    page_icon="🎥",
     layout="wide",
     initial_sidebar_state="collapsed"
-)
-
-
-# ============================================================
-# CLEAN WHITE STYLE
-# ============================================================
-
-st.markdown(
-    """
-    <style>
-
-    /* Main page */
-
-    .stApp {
-        background: #ffffff;
-        color: #111111;
-    }
-
-    .block-container {
-        max-width: 1100px;
-        padding-top: 45px;
-        padding-bottom: 50px;
-    }
-
-    /* Typography */
-
-    html,
-    body,
-    [class*="css"] {
-        font-family:
-            ui-monospace,
-            SFMono-Regular,
-            Menlo,
-            Monaco,
-            Consolas,
-            "Liberation Mono",
-            monospace;
-    }
-
-    h1 {
-        font-family:
-            ui-monospace,
-            SFMono-Regular,
-            Menlo,
-            Monaco,
-            Consolas,
-            "Liberation Mono",
-            monospace !important;
-
-        font-size: 2.2rem !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.04em !important;
-        color: #111111 !important;
-    }
-
-    p {
-        color: #555555;
-    }
-
-    /* Hide Streamlit branding */
-
-    #MainMenu {
-        visibility: hidden;
-    }
-
-    footer {
-        visibility: hidden;
-    }
-
-    header {
-        visibility: hidden;
-    }
-
-    /* Buttons */
-
-    .stButton > button {
-        width: 100%;
-        border: 1px solid #111111;
-        border-radius: 4px;
-        background: #111111;
-        color: #ffffff;
-        font-family: inherit;
-        font-weight: 700;
-        padding: 0.65rem 1rem;
-    }
-
-    .stButton > button:hover {
-        border-color: #333333;
-        background: #333333;
-        color: #ffffff;
-    }
-
-    .stDownloadButton > button {
-        width: 100%;
-        border-radius: 4px;
-        font-family: inherit;
-        font-weight: 600;
-    }
-
-    /* File uploader */
-
-    [data-testid="stFileUploader"] {
-        border: 1px solid #dddddd;
-        border-radius: 6px;
-        background: #fafafa;
-        padding: 8px;
-    }
-
-    /* Metrics */
-
-    [data-testid="stMetric"] {
-        background: #fafafa;
-        border: 1px solid #e5e5e5;
-        border-radius: 5px;
-        padding: 12px;
-    }
-
-    [data-testid="stMetricLabel"] {
-        font-family: inherit;
-        color: #777777;
-    }
-
-    [data-testid="stMetricValue"] {
-        font-family: inherit;
-        color: #111111;
-    }
-
-    /* Divider */
-
-    hr {
-        border: none;
-        border-top: 1px solid #e5e5e5;
-        margin: 28px 0;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True
 )
 
 
@@ -297,13 +159,7 @@ def restore_frame(
 st.title("Neural Video Compression")
 
 st.caption(
-    "Learned motion estimation + residual coding "
-    "trained entirely from scratch."
-)
-
-st.caption(
-    f"Device: {DEVICE.type.upper()}  |  "
-    "Model: CNN + Residual Autoencoder"
+    "Deep learning based video reconstruction"
 )
 
 st.divider()
@@ -313,10 +169,10 @@ st.divider()
 # UPLOAD
 # ============================================================
 
-st.subheader("Input Video")
+st.subheader("Upload Video")
 
 uploaded_file = st.file_uploader(
-    "Upload a video",
+    "Choose a video",
     type=[
         "mp4",
         "webm",
@@ -325,18 +181,17 @@ uploaded_file = st.file_uploader(
     ]
 )
 
-
 if uploaded_file is None:
 
     st.info(
-        "Upload a video to start neural reconstruction."
+        "Upload a video to run the trained model."
     )
 
     st.stop()
 
 
 # ============================================================
-# SAVE INPUT TEMPORARILY
+# SAVE INPUT
 # ============================================================
 
 suffix = os.path.splitext(
@@ -358,7 +213,7 @@ input_path = input_temp.name
 
 
 # ============================================================
-# READ VIDEO INFORMATION
+# VIDEO INFORMATION
 # ============================================================
 
 cap = cv2.VideoCapture(
@@ -394,7 +249,7 @@ height = int(
     )
 )
 
-metadata_frame_count = int(
+frame_count = int(
     cap.get(
         cv2.CAP_PROP_FRAME_COUNT
     )
@@ -407,7 +262,7 @@ cap.release()
 # ORIGINAL VIDEO
 # ============================================================
 
-st.subheader("Original")
+st.subheader("Original Video")
 
 st.video(
     uploaded_file.getvalue()
@@ -420,51 +275,24 @@ st.video(
 
 st.subheader("Video Information")
 
-info1, info2, info3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 
-with info1:
+with col1:
     st.metric(
         "Resolution",
         f"{width} × {height}"
     )
 
-with info2:
+with col2:
     st.metric(
         "Frame Rate",
         f"{fps:.2f} FPS"
     )
 
-with info3:
+with col3:
     st.metric(
         "Frames",
-        metadata_frame_count
-    )
-
-
-# ============================================================
-# MODEL INFORMATION
-# ============================================================
-
-st.subheader("Model")
-
-model1, model2, model3 = st.columns(3)
-
-with model1:
-    st.metric(
-        "Architecture",
-        "CNN + AE"
-    )
-
-with model2:
-    st.metric(
-        "Internal Resolution",
-        "448 × 256"
-    )
-
-with model3:
-    st.metric(
-        "Training",
-        "From Scratch"
+        frame_count
     )
 
 
@@ -472,11 +300,11 @@ st.divider()
 
 
 # ============================================================
-# RUN BUTTON
+# RUN MODEL
 # ============================================================
 
 run_compression = st.button(
-    "RUN NEURAL COMPRESSION"
+    "Run Neural Compression"
 )
 
 if not run_compression:
@@ -515,7 +343,7 @@ output_path = output_temp.name
 
 
 # ============================================================
-# OPEN INPUT
+# OPEN VIDEO
 # ============================================================
 
 cap = cv2.VideoCapture(
@@ -525,7 +353,7 @@ cap = cv2.VideoCapture(
 if not cap.isOpened():
 
     st.error(
-        "Could not reopen uploaded video."
+        "Could not reopen the uploaded video."
     )
 
     st.stop()
@@ -545,7 +373,7 @@ writer = cv2.VideoWriter(
 
 
 # ============================================================
-# READ FIRST FRAME
+# FIRST FRAME
 # ============================================================
 
 success, frame = cap.read()
@@ -556,13 +384,12 @@ if not success:
     writer.release()
 
     st.error(
-        "The video contains no readable frames."
+        "The uploaded video contains no readable frames."
     )
 
     st.stop()
 
 
-# Keep first frame as reference
 writer.write(frame)
 
 previous_tensor = preprocess_frame(
@@ -592,8 +419,8 @@ with torch.no_grad():
         if not success:
             break
 
-        current_tensor = (
-            preprocess_frame(frame)
+        current_tensor = preprocess_frame(
+            frame
         )
 
         outputs = model(
@@ -622,7 +449,7 @@ with torch.no_grad():
         progress_value = min(
             processed_frames
             / max(
-                metadata_frame_count,
+                frame_count,
                 1
             ),
             1.0
@@ -635,7 +462,7 @@ with torch.no_grad():
         progress_text.write(
             f"Processing frame "
             f"{processed_frames} / "
-            f"{metadata_frame_count}"
+            f"{frame_count}"
         )
 
 
@@ -644,7 +471,7 @@ writer.release()
 
 
 # ============================================================
-# COMPLETION
+# RESULT
 # ============================================================
 
 st.success(
@@ -654,7 +481,7 @@ st.success(
 
 
 # ============================================================
-# OUTPUT
+# RECONSTRUCTED VIDEO
 # ============================================================
 
 st.subheader("Reconstructed Video")
@@ -668,6 +495,8 @@ st.video(
 # OUTPUT INFORMATION
 # ============================================================
 
+st.subheader("Output Information")
+
 out1, out2, out3 = st.columns(3)
 
 with out1:
@@ -678,14 +507,14 @@ with out1:
 
 with out2:
     st.metric(
-        "Frames",
+        "Frames Processed",
         processed_frames
     )
 
 with out3:
     st.metric(
-        "FPS",
-        f"{fps:.2f}"
+        "Frame Rate",
+        f"{fps:.2f} FPS"
     )
 
 
@@ -701,16 +530,8 @@ with open(
 ) as file:
 
     st.download_button(
-        label="DOWNLOAD RECONSTRUCTED VIDEO",
+        label="Download Reconstructed Video",
         data=file,
         file_name="reconstructed_video.mp4",
         mime="video/mp4"
     )
-
-
-st.divider()
-
-st.caption(
-    "Inference only. No pretrained model or "
-    "pretrained weights are used."
-)
