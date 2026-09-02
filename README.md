@@ -1,3 +1,8 @@
+## Live Demo
+
+[![Open Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-red?style=for-the-badge&logo=streamlit)](YOUR_STREAMLIT_URL)
+
+Try the trained neural video compression model directly in your browser.
 # Neural Video Compression
 
 A PyTorch-based neural video compression prototype built entirely from scratch using learned motion estimation, residual coding, entropy modeling, and rate-distortion optimization.
