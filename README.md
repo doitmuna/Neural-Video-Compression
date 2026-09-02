@@ -2,27 +2,24 @@
 
 A PyTorch-based neural video compression prototype built entirely from scratch using learned motion estimation, residual coding, entropy modeling, and rate-distortion optimization.
 
----
+> **No pretrained models or pretrained weights are used. All neural networks are trained from randomly initialized parameters.**
 
 ## Overview
 
-Video contains substantial **temporal redundancy**: consecutive frames often share most of their visual information.
+Video contains significant temporal redundancy because consecutive frames often share most of their visual information.
 
-Instead of independently encoding every frame, this project learns to predict the current frame from the previous frame and encode only the information that cannot be predicted.
+Instead of independently processing every frame, this project learns to:
 
-The system consists of:
+1. Estimate motion between consecutive frames.
+2. Warp the previous frame to predict the current frame.
+3. Compute the residual information that remains.
+4. Compress the residual using a learned encoder.
+5. Quantize the latent representation.
+6. Decode the residual using a learned decoder.
+7. Reconstruct the current frame.
+8. Estimate the bitrate using a learned entropy model.
 
-- CNN-based motion estimation
-- Differentiable motion compensation
-- Residual computation
-- Learned residual encoder and decoder
-- Latent quantization
-- Learned Gaussian entropy model
-- Rate-distortion optimization
-- Video reconstruction
-- PSNR, MSE, and BPP evaluation
-
-> **All neural networks in this project are trained from scratch with randomly initialized parameters. No pretrained models or pretrained weights are used.**
+The project was developed and trained using PyTorch on an NVIDIA Tesla T4 GPU.
 
 ---
 
@@ -30,21 +27,17 @@ The system consists of:
 
 ```mermaid
 flowchart LR
+    A["Previous Frame"] --> B["Motion Estimation CNN"]
+    C["Current Frame"] --> B
 
-    A["Previous Frame"]
-    B["Current Frame"]
-
-    A --> C["Motion Estimation CNN"]
-    B --> C
-
-    C --> D["Optical Flow"]
+    B --> D["Optical Flow"]
 
     A --> E["Differentiable Warping"]
     D --> E
 
     E --> F["Motion Prediction"]
 
-    B --> G["Residual"]
+    C --> G["Residual Computation"]
     F --> G
 
     G --> H["Residual Encoder"]
@@ -54,231 +47,420 @@ flowchart LR
     J --> K["Residual Decoder"]
     K --> L["Reconstructed Residual"]
 
-    F --> M["Reconstructed Frame"]
+    F --> M["Frame Reconstruction"]
     L --> M
 
-How the Model Works
-1. Motion Estimation
+    M --> N["Reconstructed Frame"]
+```
 
-Two consecutive frames are given to a convolutional neural network:
+---
 
-$$ (F_{t-1}, F_t) \rightarrow \text{Motion Network} \rightarrow \mathbf{f}_t $$
+## How the Model Works
 
-where $\mathbf{f}_t$ is a two-channel optical-flow field containing horizontal and vertical motion information.
+### 1. Motion Estimation
 
-The motion network is trained entirely from scratch.
+Two consecutive frames are provided to a convolutional neural network:
 
-2. Motion Compensation
+$$
+(F_{t-1}, F_t)
+\rightarrow
+\text{Motion Network}
+\rightarrow
+\mathbf{f}_t
+$$
 
-The predicted flow is used to warp the previous frame:
+where $\mathbf{f}_t$ is a two-channel optical-flow field representing horizontal and vertical pixel displacement.
 
-$$ \hat{F}_t^{motion} = Warp(F_{t-1}, \mathbf{f}_t) $$
+The motion estimation network is trained completely from scratch.
 
-This creates a prediction of the current frame using information from the previous frame.
+### 2. Motion Compensation
 
-3. Residual Computation
+The predicted optical flow is used to warp the previous frame toward the current frame:
 
-The part that cannot be explained by motion is represented as a residual:
+$$
+\hat{F}_t^{motion}
+=
+Warp(F_{t-1}, \mathbf{f}_t)
+$$
 
-$$ R_t = F_t - \hat{F}_t^{motion} $$
+This produces a motion-based prediction of the current frame.
 
-A better motion prediction should produce a smaller and easier-to-compress residual.
+### 3. Residual Computation
 
-4. Residual Encoding
+The information that cannot be explained by the motion prediction is represented as a residual:
 
-The residual is passed through a learned encoder:
+$$
+R_t
+=
+F_t - \hat{F}_t^{motion}
+$$
 
-$$ R_t \xrightarrow{Encoder} y_t $$
+A good motion prediction should reduce the amount of information remaining in the residual.
 
-where $y_t$ is the latent representation.
+### 4. Residual Encoding
 
-The encoder reduces the spatial resolution while learning a compact representation of the residual information.
+The residual is passed through a learned convolutional encoder:
 
-5. Quantization
+$$
+R_t
+\xrightarrow{Encoder}
+y_t
+$$
 
-The continuous latent representation is quantized:
+where $y_t$ is a compact latent representation.
 
-$$ \hat{y}_t = round(y_t) $$
+For the current model, the encoder reduces the spatial dimensions by a factor of 8 while increasing the number of latent channels.
 
-A straight-through estimator is used during training so that the network can still receive gradients through the quantization operation.
+### 5. Latent Quantization
 
-6. Residual Decoding
+The continuous latent representation is converted into discrete values:
 
-The quantized latent is passed through the learned decoder:
+$$
+\hat{y}_t
+=
+round(y_t)
+$$
 
-$$ \hat{y}_t \xrightarrow{Decoder} \hat{R}_t $$
+During training, a straight-through estimator is used so gradients can still propagate through the quantization operation.
+
+### 6. Residual Decoding
+
+The quantized latent representation is passed through the learned decoder:
+
+$$
+\hat{y}_t
+\xrightarrow{Decoder}
+\hat{R}_t
+$$
 
 where $\hat{R}_t$ is the reconstructed residual.
 
-7. Frame Reconstruction
+### 7. Frame Reconstruction
 
-The final frame is reconstructed by adding the predicted frame and decoded residual:
+The reconstructed frame is obtained by combining the motion prediction with the decoded residual:
 
-$$ \hat{F}_t = \hat{F}_t^{motion} + \hat{R}_t $$
+$$
+\hat{F}_t
+=
+\hat{F}_t^{motion}
++
+\hat{R}_t
+$$
 
-The reconstructed result is clipped to the valid image range.
+The final values are clipped to the valid normalized image range:
 
-Entropy Modeling
+$$
+\hat{F}_t \in [0,1]
+$$
 
-The latent representation should not only reconstruct the image accurately; it should also be efficient to encode.
+---
 
-We model the latent values using a learned Gaussian distribution.
+## Entropy Modeling
+
+The latent representation should be compact not only in terms of dimensions but also in terms of its estimated coding cost.
+
+This project uses a learned Gaussian probability model for the quantized latent representation.
 
 For a quantized latent value $\hat{y}$:
 
-$$ p(\hat{y}) = \Phi \left( \frac{\hat{y}+0.5}{\sigma} \right) - \Phi \left( \frac{\hat{y}-0.5}{\sigma} \right) $$
+$$
+p(\hat{y})
+=
+\Phi
+\left(
+\frac{\hat{y}+0.5}{\sigma}
+\right)
+-
+\Phi
+\left(
+\frac{\hat{y}-0.5}{\sigma}
+\right)
+$$
 
 where:
 
-$\Phi$ is the standard Gaussian cumulative distribution function.
-$\sigma$ is a learned scale parameter.
+- $\Phi$ is the standard Gaussian cumulative distribution function.
+- $\sigma$ is a learned scale parameter.
 
-The estimated number of bits is:
+The estimated number of bits for a latent value is:
 
-$$ R = -\log_2 p(\hat{y}) $$
+$$
+R
+=
+-\log_2 p(\hat{y})
+$$
 
-The total rate is then converted into Bits Per Pixel (BPP):
+The estimated bitrate is represented using bits per pixel:
 
-$$ BPP = \frac{\text{Estimated Total Bits}} {\text{Number of Image Pixels}} $$
+$$
+BPP
+=
+\frac{\text{Estimated Total Bits}}
+{\text{Number of Image Pixels}}
+$$
 
-The current implementation uses a learned bitrate estimate. It does not yet generate a standards-compatible arithmetic-coded neural bitstream.
+> **Note:** The current BPP value is a learned bitrate estimate. The implementation does not yet produce a standards-compatible arithmetic-coded neural bitstream.
 
-Rate-Distortion Optimization
+---
+
+## Rate-Distortion Optimization
 
 The model jointly optimizes reconstruction quality and estimated bitrate.
 
-The training objective is:
+The objective is:
 
-$$ \mathcal{L} = D + \lambda R $$
+$$
+\mathcal{L}
+=
+D+\lambda R
+$$
 
-In this implementation:
+For this implementation:
 
-$$ \mathcal{L} = MSE + \lambda \cdot BPP $$
+$$
+\mathcal{L}
+=
+MSE+\lambda \cdot BPP
+$$
 
 where:
 
-$MSE$ represents reconstruction distortion.
-$BPP$ represents the estimated bitrate.
-$\lambda$ controls the trade-off between visual quality and compression rate.
+- $MSE$ represents reconstruction distortion.
+- $BPP$ represents the estimated bitrate.
+- $\lambda$ controls the trade-off between reconstruction quality and compression rate.
 
-A larger $\lambda$ places more emphasis on reducing bitrate, while a smaller $\lambda$ places more emphasis on reconstruction quality.
+A lower distortion improves reconstruction quality, while a lower estimated rate encourages a more compact latent representation.
 
-Training Setup
+---
 
-The model was trained using:
+## Training Configuration
 
-Component	Configuration
-Framework	PyTorch
-GPU	NVIDIA Tesla T4
-Dataset	Vimeo-90K-derived mini subset
-Training sequences	800
-Validation sequences	100
-Test sequences	100
-Input frame size	448 × 256
-Batch size	4
-Optimizer	Adam
-Learning rate	$10^{-4}$
-Weight decay	$10^{-5}$
-Training epochs	10
+| Parameter | Value |
+|---|---|
+| Framework | PyTorch |
+| GPU | NVIDIA Tesla T4 |
+| Dataset | Vimeo-90K-derived mini dataset |
+| Total sequences | 1,000 |
+| Training sequences | 800 |
+| Validation sequences | 100 |
+| Test sequences | 100 |
+| Frames per sequence | 3 |
+| Training resolution | 448 × 256 |
+| Batch size | 4 |
+| Optimizer | Adam |
+| Learning rate | $1 \times 10^{-4}$ |
+| Weight decay | $1 \times 10^{-5}$ |
+| Training epochs | 10 |
+| $\lambda$ | 0.01 |
 
-The dataset split is performed at the sequence level to avoid placing frames from the same sequence in both training and evaluation sets.
+The dataset is split at the **sequence level** so that frames from the same sequence are not shared between training, validation, and test sets.
 
-Dataset
+---
 
-A subset containing 1,000 video sequences was used:
+## Dataset
 
-800 training sequences
-100 validation sequences
-100 test sequences
+The project uses 1,000 sequences from a Vimeo-90K-derived mini dataset.
 
-Each sequence contains consecutive RGB frames.
+Each sequence contains three consecutive RGB frames:
 
-The dataset is not included in this repository because of its size.
+```text
+frame_01
+frame_02
+frame_03
+```
 
-Evaluation Metrics
+The split used in this project is:
+
+```text
+Training    : 800 sequences
+Validation  : 100 sequences
+Testing     : 100 sequences
+```
+
+The dataset itself is **not included in this repository**.
+
+---
+
+## Evaluation Metrics
+
+### Mean Squared Error
+
+MSE measures the average squared difference between the original and reconstructed pixels:
+
+$$
 MSE
-
-Mean Squared Error measures the average pixel-level reconstruction error:
-
-$$ MSE = \frac{1}{N} \sum_{i=1}^{N} (x_i-\hat{x}_i)^2 $$
+=
+\frac{1}{N}
+\sum_{i=1}^{N}
+(x_i-\hat{x}_i)^2
+$$
 
 Lower MSE indicates lower reconstruction error.
 
+### Peak Signal-to-Noise Ratio
+
+PSNR is calculated from the reconstruction error:
+
+$$
 PSNR
+=
+10\log_{10}
+\left(
+\frac{MAX^2}{MSE}
+\right)
+$$
 
-Peak Signal-to-Noise Ratio is derived from MSE:
+For normalized images:
 
-$$ PSNR = 10\log_{10} \left( \frac{MAX^2}{MSE} \right) $$
-
-For normalized images, $MAX=1$.
+$$
+MAX=1
+$$
 
 Higher PSNR generally indicates better reconstruction quality.
 
+### Bits Per Pixel
+
+BPP represents the estimated coding rate per image pixel:
+
+$$
 BPP
-
-Bits Per Pixel represents the estimated number of coding bits required per image pixel:
-
-$$ BPP = \frac{\text{Estimated Bits}} {\text{Number of Pixels}} $$
+=
+\frac{\text{Estimated Bits}}
+{\text{Number of Pixels}}
+$$
 
 Lower BPP indicates a lower estimated bitrate.
 
-Experimental Results
-Held-Out Test Set
-Metric	Result
-PSNR	27.92 dB
-MSE	0.001615
-Learned BPP	1.171961
+---
 
-These values were obtained using the best checkpoint selected using validation loss.
+## Experimental Results
 
-Reconstruction Example
+### Held-Out Test Set
 
-The comparison shows the original target frame and the reconstruction generated by the trained neural codec.
+The best model checkpoint was selected using validation loss and then evaluated on the held-out test set.
 
-Real Video Inference
+| Metric | Result |
+|---|---:|
+| PSNR | **27.92 dB** |
+| MSE | **0.001615** |
+| Learned BPP | **1.171961** |
 
-The trained model was also tested on a separate video containing approximately 1,691 readable frames.
+These values were obtained from the final test evaluation.
 
-The inference pipeline performs:
+---
 
+## Reconstruction Example
+
+The repository contains a visual comparison between the original and reconstructed frames:
+
+![Test Reconstruction Comparison](results/test_reconstruction_comparison.png)
+
+The reconstruction preserves the major structure and appearance of the target frame while showing some smoothing and reconstruction artifacts.
+
+---
+
+## Training Behavior
+
+The training process records:
+
+- Rate-distortion loss
+- Reconstruction MSE
+- Estimated BPP
+- Validation loss
+- Validation MSE
+- Validation BPP
+
+The complete training history is stored in:
+
+```text
+results/training_history.json
+```
+
+---
+
+## Real Video Inference
+
+After training, the model was tested on a separate video outside the training dataset.
+
+The video processing pipeline is:
+
+```text
 Input Video
-     ↓
-Frame Extraction
-     ↓
+     |
+     v
+Frame Reading
+     |
+     v
 Motion Estimation
-     ↓
+     |
+     v
 Motion Compensation
-     ↓
+     |
+     v
 Residual Computation
-     ↓
-Residual Encoding
-     ↓
+     |
+     v
+Residual Encoder
+     |
+     v
 Latent Quantization
-     ↓
-Residual Decoding
-     ↓
+     |
+     v
+Residual Decoder
+     |
+     v
 Frame Reconstruction
-     ↓
+     |
+     v
 Output Video
+```
 
-The model successfully processed the full test video and generated a reconstructed MP4.
+The model successfully processed approximately **1,691 readable frames** from the test video and generated a reconstructed MP4.
 
-Streamlit Demo
+The input video had:
 
-The repository contains a Streamlit application for testing the trained neural codec on uploaded videos.
+```text
+Resolution : 854 × 480
+Frame Rate : 24 FPS
+```
+
+During neural processing, frames are converted to the model's training resolution of 448 × 256 and then restored to the original video resolution during reconstruction.
+
+---
+
+## Streamlit Application
+
+A Streamlit application is included for interactive inference.
 
 The application:
 
-Accepts a video upload.
-Loads the trained checkpoint.
-Processes the video frame by frame.
-Reconstructs each frame using the neural codec.
-Produces a reconstructed MP4.
+1. Accepts an uploaded video.
+2. Loads the trained neural compression model.
+3. Processes frames sequentially.
+4. Performs motion estimation.
+5. Encodes and decodes residual information.
+6. Reconstructs the video.
+7. Produces a downloadable reconstructed MP4.
 
-The application uses the trained model stored in:
+The trained checkpoint used by the application is:
 
+```text
 checkpoints/best_model.pth
-Project Structure
+```
+
+The Streamlit source files are:
+
+```text
+app/
+├── app.py
+└── neural_codec.py
+```
+
+---
+
+## Project Structure
+
+```text
 Neural-Video-Compression/
 │
 ├── app/
@@ -300,86 +482,87 @@ Neural-Video-Compression/
 ├── .gitignore
 ├── README.md
 └── requirements.txt
-Reproducibility
+```
 
-The complete development process is documented in:
+---
 
+## Reproducibility
+
+The complete experiment and development process is documented in:
+
+```text
 notebooks/Neural_Video_Compression.ipynb
+```
 
-The trained checkpoint is included in:
+The trained model is available at:
 
+```text
 checkpoints/best_model.pth
+```
 
-Dependencies are listed in:
+The required Python packages are listed in:
 
+```text
 requirements.txt
+```
 
-The dataset itself must be obtained separately.
+The dataset is not included in the repository and must be obtained separately.
 
-Limitations
+---
 
-This project is an academic/research prototype rather than a production video codec.
+## Limitations
+
+This project is an academic and research prototype rather than a production video codec.
 
 Current limitations include:
 
-The entropy model provides a learned bitrate estimate rather than a complete arithmetic-coded bitstream.
-The neural model operates internally at a fixed training resolution of 448 × 256.
-Reconstructed frames can show some smoothing and visual artifacts.
-The current implementation is designed for demonstrating the principles of learned video compression rather than real-time deployment.
-Future Work
+- The entropy model provides a learned bitrate estimate rather than a complete arithmetic-coded bitstream.
+- The neural model operates internally at a fixed resolution of 448 × 256.
+- Reconstruction can introduce smoothing and visual artifacts.
+- The current implementation prioritizes demonstrating the principles of learned video compression rather than real-time performance.
+- The current video inference pipeline does not yet implement full neural bitstream generation.
 
-Possible extensions include:
+---
 
-More advanced motion estimation networks
-Improved entropy models
-Perceptual loss functions such as SSIM or LPIPS
-Multi-scale video processing
-Actual entropy coding and neural bitstream generation
-Rate-control experiments with different $\lambda$ values
-Faster inference and GPU deployment
-Improved video/audio preservation
-Technologies
-Python
-PyTorch
-OpenCV
-NumPy
-Pillow
-FFmpeg
-Streamlit
-Google Colab
-Author
+## Future Work
 
-Munna Kumar Sah
+Possible improvements include:
 
-GitHub: @doitmuna
+- Improved motion estimation architectures
+- More expressive entropy models
+- Multi-scale video processing
+- Perceptual losses such as SSIM or LPIPS
+- Better rate-distortion control
+- Actual entropy coding and neural bitstream generation
+- Improved temporal modeling using longer frame sequences
+- Faster GPU inference
+- Audio preservation and complete multimedia reconstruction
+- Deployment optimization for real-time applications
 
-License
+---
+
+## Technologies
+
+- Python
+- PyTorch
+- Torchvision
+- OpenCV
+- NumPy
+- Pillow
+- FFmpeg
+- Streamlit
+- Google Colab
+
+---
+
+## Author
+
+**Munna Kumar Sah**
+
+GitHub: [@doitmuna](https://github.com/doitmuna)
+
+---
+
+## License
 
 This project is intended for academic and educational use.
-
-
-### Why this version is better
-
-The equations such as
-
-\[
-R_t = F_t-\hat F_t^{motion}
-\]
-
-and
-
-\[
-\mathcal{L}=MSE+\lambda\cdot BPP
-\]
-
-will render as proper mathematical expressions on GitHub rather than appearing as raw text. GitHub officially supports block math with `$$...$$`, and Mermaid diagrams inside ` ```mermaid ` blocks. :contentReference[oaicite:1]{index=1}
-
-### One important correction
-
-I changed the wording from **“compressed video”** to **“reconstructed video”** in places where appropriate. That's deliberate: our current implementation has a learned BPP estimate but does **not yet produce a true neural compressed bitstream**. Being precise about this will make the project more defensible when an RA/TA reviewer examines the code.
-
-After pasting this into `README.md`, save it and run:
-
-```powershell
-# Check the README change
-git status
