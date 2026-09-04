@@ -1,21 +1,25 @@
 import os
 import sys
-import shutil
-import subprocess
 import tempfile
 
 import cv2
 import numpy as np
 import streamlit as st
 import torch
+import imageio_ffmpeg
 
 
 # ============================================================
 # PATHS
 # ============================================================
 
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, ".."))
+APP_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
+
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(APP_DIR, "..")
+)
 
 sys.path.insert(0, APP_DIR)
 
@@ -29,7 +33,8 @@ MODEL_PATH = os.path.join(
 )
 
 DEVICE = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu"
+    "cuda" if torch.cuda.is_available()
+    else "cpu"
 )
 
 MODEL_WIDTH = 448
@@ -42,40 +47,34 @@ MODEL_HEIGHT = 256
 
 st.set_page_config(
     page_title="Neural Video Compression",
-    page_icon="◼",
+    page_icon="🎥",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 
 # ============================================================
-# EXACT EDITORIAL STYLE
+# LIGHT EDITORIAL UI
 # ============================================================
 
 st.markdown(
     """
     <style>
 
-    /* ========================================================
-       GLOBAL
-    ======================================================== */
-
     :root {
         --black: #111111;
         --white: #ffffff;
         --gray: #666666;
-        --light-gray: #eeeeee;
+        --light: #f7f7f7;
+        --line: #d6d6d6;
         --yellow: #ffe500;
     }
 
+    /* ---------- Page ---------- */
+
     html,
-    body,
-    [class*="css"],
-    [data-testid="stAppViewContainer"] {
-        font-family:
-            Arial,
-            Helvetica,
-            sans-serif !important;
+    body {
+        background: #ffffff !important;
     }
 
     [data-testid="stAppViewContainer"],
@@ -83,165 +82,150 @@ st.markdown(
         background: #ffffff !important;
     }
 
-    .main .block-container {
+    .block-container {
         max-width: 1160px !important;
-        padding-top: 45px !important;
-        padding-bottom: 70px !important;
+        padding-top: 40px !important;
+        padding-bottom: 60px !important;
     }
 
-    /* ========================================================
-       STREAMLIT HEADER
-    ======================================================== */
+    /* ---------- Font ---------- */
+
+    html,
+    body,
+    [class*="css"] {
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif !important;
+    }
+
+    /* ---------- Streamlit header ---------- */
 
     [data-testid="stHeader"] {
         background: #ffffff !important;
         box-shadow: none !important;
-        border-bottom: 1px solid #111111 !important;
+        border-bottom: 1px solid #dddddd !important;
     }
 
     [data-testid="stDecoration"] {
         display: none !important;
     }
 
-    #MainMenu {
-        visibility: hidden;
-    }
-
-    footer {
-        visibility: hidden;
-    }
-
-    /* ========================================================
-       HERO
-    ======================================================== */
+    /* ---------- Titles ---------- */
 
     .eyebrow {
         display: inline-block;
-        background: var(--black);
-        color: var(--yellow);
-        padding: 7px 13px 6px 13px;
+        background: #111111;
+        color: #ffe500;
+        padding: 7px 12px;
         font-family:
             "Courier New",
             Courier,
             monospace !important;
         font-size: 0.72rem;
         font-weight: 700;
-        letter-spacing: 0.14em;
-        line-height: 1;
-        margin-bottom: 28px;
+        letter-spacing: 0.13em;
+        margin-bottom: 22px;
     }
 
     .hero-title {
+        color: #111111;
         font-family:
-            Arial Narrow,
+            "Arial Narrow",
             "Helvetica Neue",
             Arial,
             sans-serif !important;
-        color: var(--black);
-        font-size: 4rem;
+        font-size: 3.8rem;
         font-weight: 900;
-        letter-spacing: -0.065em;
+        letter-spacing: -0.06em;
         line-height: 0.95;
         text-transform: uppercase;
         margin: 0;
     }
 
     .hero-description {
+        max-width: 780px;
         color: #333333;
-        font-family:
-            Arial,
-            Helvetica,
-            sans-serif !important;
         font-size: 1rem;
-        line-height: 1.65;
-        max-width: 760px;
-        margin-top: 28px;
+        line-height: 1.6;
+        margin-top: 24px;
     }
 
     .hero-rule {
         height: 6px;
-        margin: 42px 0 62px 0;
+        margin: 38px 0 58px 0;
         background:
             linear-gradient(
                 to right,
-                var(--yellow) 0%,
-                var(--yellow) 10%,
-                var(--black) 10%,
-                var(--black) 100%
+                #ffe500 0%,
+                #ffe500 10%,
+                #111111 10%,
+                #111111 100%
             );
     }
 
-    /* ========================================================
-       SECTION HEADERS
-    ======================================================== */
+    /* ---------- Section headers ---------- */
 
     .section-heading {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-top: 32px;
-        margin-bottom: 18px;
+        gap: 9px;
+        margin-top: 28px;
+        margin-bottom: 17px;
     }
 
     .section-marker {
-        display: inline-block;
-        background: var(--black);
-        color: var(--yellow);
+        background: #111111;
+        color: #ffe500;
         padding: 3px 6px;
         font-family:
             "Courier New",
             Courier,
             monospace !important;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 700;
     }
 
     .section-title {
+        color: #111111;
         font-family:
             "Courier New",
             Courier,
             monospace !important;
-        color: var(--black);
-        font-size: 0.9rem;
+        font-size: 0.83rem;
         font-weight: 700;
-        letter-spacing: 0.11em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
     }
 
-    /* ========================================================
-       UPLOADER
-    ======================================================== */
+    /* ---------- File uploader ---------- */
 
     [data-testid="stFileUploader"] {
         background: #fafafa !important;
-        border: 2px solid var(--black) !important;
+        border: 2px solid #111111 !important;
         border-radius: 0 !important;
-        padding: 18px !important;
+        padding: 16px !important;
     }
 
     [data-testid="stFileUploaderDropzone"] {
-        min-height: 85px !important;
         background: #ffffff !important;
-        border: 1px dashed #222222 !important;
+        border: 1px dashed #333333 !important;
         border-radius: 0 !important;
     }
 
     [data-testid="stFileUploaderDropzoneInstructions"] {
-        color: var(--black) !important;
+        color: #222222 !important;
     }
 
-    [data-testid="stFileUploaderDropzoneInstructions"] span {
-        color: var(--black) !important;
-    }
-
+    [data-testid="stFileUploaderDropzoneInstructions"] span,
     [data-testid="stFileUploaderDropzoneInstructions"] small {
-        color: #444444 !important;
+        color: #333333 !important;
     }
 
     [data-testid="stFileUploaderDropzone"] button {
-        background: var(--yellow) !important;
-        color: var(--black) !important;
-        border: 2px solid var(--black) !important;
+        background: #ffe500 !important;
+        color: #111111 !important;
+        border: 2px solid #111111 !important;
         border-radius: 0 !important;
         font-family:
             "Courier New",
@@ -250,54 +234,16 @@ st.markdown(
         font-weight: 700 !important;
     }
 
-    /* ========================================================
-       NOTE
-    ======================================================== */
-
-    .upload-note {
-        border-left: 4px solid var(--yellow);
-        padding: 12px 15px;
-        margin-top: 18px;
-        color: var(--black);
-        font-family:
-            "Courier New",
-            Courier,
-            monospace !important;
-        font-size: 0.76rem;
-        font-weight: 700;
-        line-height: 1.5;
-        text-transform: uppercase;
-    }
-
-    /* ========================================================
-       VIDEO LABEL
-    ======================================================== */
-
-    .video-label {
-        color: #555555;
-        font-family:
-            "Courier New",
-            Courier,
-            monospace !important;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        margin: 20px 0 8px 0;
-    }
-
-    /* ========================================================
-       METRICS
-    ======================================================== */
+    /* ---------- Metrics ---------- */
 
     [data-testid="stMetric"] {
         background: #ffffff !important;
-        border-top: 2px solid var(--black) !important;
+        border-top: 2px solid #111111 !important;
         border-bottom: 1px solid #cccccc !important;
         border-left: none !important;
         border-right: none !important;
         border-radius: 0 !important;
-        padding: 13px 0 !important;
+        padding: 12px 0 !important;
     }
 
     [data-testid="stMetricLabel"] {
@@ -306,56 +252,54 @@ st.markdown(
             "Courier New",
             Courier,
             monospace !important;
-        font-size: 0.68rem !important;
+        font-size: 0.67rem !important;
         font-weight: 700 !important;
         letter-spacing: 0.08em !important;
         text-transform: uppercase !important;
     }
 
     [data-testid="stMetricValue"] {
-        color: var(--black) !important;
+        color: #111111 !important;
         font-family:
             "Courier New",
             Courier,
             monospace !important;
-        font-size: 1.25rem !important;
+        font-size: 1.2rem !important;
         font-weight: 700 !important;
     }
 
-    /* ========================================================
-       BUTTONS
-    ======================================================== */
+    /* ---------- Buttons ---------- */
 
     .stButton > button {
         width: 100%;
-        min-height: 50px;
+        min-height: 48px;
+        background: #111111 !important;
+        color: #ffffff !important;
+        border: 2px solid #111111 !important;
         border-radius: 0 !important;
-        border: 2px solid var(--black) !important;
-        background: var(--black) !important;
-        color: var(--white) !important;
         font-family:
             "Courier New",
             Courier,
             monospace !important;
         font-size: 0.78rem !important;
         font-weight: 700 !important;
-        letter-spacing: 0.08em !important;
+        letter-spacing: 0.07em !important;
         text-transform: uppercase !important;
     }
 
     .stButton > button:hover {
-        background: var(--yellow) !important;
-        border-color: var(--black) !important;
-        color: var(--black) !important;
+        background: #ffe500 !important;
+        color: #111111 !important;
+        border-color: #111111 !important;
     }
 
     .stDownloadButton > button {
         width: 100%;
-        min-height: 48px;
+        min-height: 46px;
+        background: #ffffff !important;
+        color: #111111 !important;
+        border: 2px solid #111111 !important;
         border-radius: 0 !important;
-        border: 2px solid var(--black) !important;
-        background: var(--white) !important;
-        color: var(--black) !important;
         font-family:
             "Courier New",
             Courier,
@@ -365,33 +309,13 @@ st.markdown(
     }
 
     .stDownloadButton > button:hover {
-        background: var(--black) !important;
-        color: var(--white) !important;
+        background: #111111 !important;
+        color: #ffffff !important;
     }
 
-    /* ========================================================
-       ALERTS
-    ======================================================== */
+    /* ---------- Notes ---------- */
 
-    [data-testid="stAlert"] {
-        border-radius: 0 !important;
-    }
-
-    /* ========================================================
-       DIVIDERS
-    ======================================================== */
-
-    hr {
-        border: none !important;
-        border-top: 1px solid #cccccc !important;
-        margin: 35px 0 !important;
-    }
-
-    /* ========================================================
-       SMALL TEXT
-    ======================================================== */
-
-    .small-note {
+    .note {
         color: #666666;
         font-family:
             "Courier New",
@@ -399,6 +323,14 @@ st.markdown(
             monospace !important;
         font-size: 0.72rem;
         line-height: 1.55;
+    }
+
+    /* ---------- Dividers ---------- */
+
+    hr {
+        border: none !important;
+        border-top: 1px solid #cccccc !important;
+        margin: 32px 0 !important;
     }
 
     </style>
@@ -416,7 +348,7 @@ def load_model():
 
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(
-            f"Checkpoint not found:\n{MODEL_PATH}"
+            f"Model checkpoint not found:\n{MODEL_PATH}"
         )
 
     model = NeuralVideoCompressionModel(
@@ -438,7 +370,7 @@ def load_model():
 
 
 # ============================================================
-# FRAME PREPROCESSING
+# PREPROCESS
 # ============================================================
 
 def preprocess_frame(frame):
@@ -461,14 +393,16 @@ def preprocess_frame(frame):
     )
 
     tensor = tensor.permute(
-        2, 0, 1
+        2,
+        0,
+        1
     ).unsqueeze(0)
 
     return tensor.to(DEVICE)
 
 
 # ============================================================
-# FRAME RESTORATION
+# RESTORE
 # ============================================================
 
 def restore_frame(
@@ -504,44 +438,62 @@ def restore_frame(
 
 
 # ============================================================
-# FFMPEG
+# H.264 WEB ENCODING
 # ============================================================
 
-def get_ffmpeg_path():
-
-    path = shutil.which("ffmpeg")
-
-    if path is None:
-        raise RuntimeError(
-            "FFmpeg is not available."
-        )
-
-    return path
-
-
-def encode_browser_video(
-    input_path,
-    output_path
+def encode_for_web(
+    reconstructed_video,
+    original_video,
+    output_video
 ):
 
-    ffmpeg = get_ffmpeg_path()
+    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
 
     command = [
         ffmpeg,
         "-y",
+
+        # Reconstructed video
         "-i",
-        input_path,
+        reconstructed_video,
+
+        # Original video - used only for audio
+        "-i",
+        original_video,
+
+        # Video
+        "-map",
+        "0:v:0",
+
+        # Optional original audio
+        "-map",
+        "1:a:0?",
+
+        # Browser-compatible H.264
         "-c:v",
         "libx264",
+
         "-preset",
         "medium",
+
         "-crf",
         "23",
+
         "-pix_fmt",
         "yuv420p",
+
+        # Audio if present
+        "-c:a",
+        "aac",
+
+        "-b:a",
+        "128k",
+
+        # Browser playback optimization
         "-movflags",
         "+faststart",
-        output_path
+
+        output_video
     ]
 
     result = subprocess.run(
@@ -552,14 +504,14 @@ def encode_browser_video(
     )
 
     if result.returncode != 0:
-
         raise RuntimeError(
-            result.stderr[-4000:]
+            "FFmpeg encoding failed:\n\n"
+            + result.stderr[-5000:]
         )
 
 
 # ============================================================
-# HERO
+# HEADER
 # ============================================================
 
 st.markdown(
@@ -575,9 +527,8 @@ st.markdown(
 st.markdown(
     """
     <div class="hero-description">
-        A learned frame-reconstruction system utilizing neural
-        motion estimation, residual coding, and latent
-        representation.
+        Neural video reconstruction using learned motion
+        estimation and residual coding.
     </div>
     """,
     unsafe_allow_html=True
@@ -590,7 +541,7 @@ st.markdown(
 
 
 # ============================================================
-# INPUT
+# INPUT VIDEO
 # ============================================================
 
 st.markdown(
@@ -604,8 +555,13 @@ st.markdown(
 )
 
 uploaded_file = st.file_uploader(
-    "Upload",
-    type=["mp4", "webm", "avi", "mov"],
+    "Upload video",
+    type=[
+        "mp4",
+        "webm",
+        "avi",
+        "mov"
+    ],
     label_visibility="collapsed"
 )
 
@@ -614,9 +570,11 @@ if uploaded_file is None:
 
     st.markdown(
         """
-        <div class="upload-note">
+        <div class="note">
             Upload a video file to run frame reconstruction
             through the trained neural model.
+            <br><br>
+            MP4 · WEBM · AVI · MOV
         </div>
         """,
         unsafe_allow_html=True
@@ -648,7 +606,7 @@ input_path = input_temp.name
 
 
 # ============================================================
-# VIDEO INFORMATION
+# READ VIDEO METADATA
 # ============================================================
 
 cap = cv2.VideoCapture(
@@ -688,11 +646,16 @@ cap.release()
 
 
 # ============================================================
-# ORIGINAL
+# ORIGINAL VIDEO
 # ============================================================
 
 st.markdown(
-    '<div class="video-label">ORIGINAL VIDEO</div>',
+    """
+    <div class="section-heading">
+        <span class="section-marker">//</span>
+        <span class="section-title">02 / ORIGINAL VIDEO</span>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
@@ -702,41 +665,44 @@ st.video(
 
 
 # ============================================================
-# VIDEO INFO
+# VIDEO INFORMATION
 # ============================================================
 
-st.markdown(
-    '<div class="video-label">VIDEO INFORMATION</div>',
-    unsafe_allow_html=True
-)
+col1, col2, col3 = st.columns(3)
 
-c1, c2, c3 = st.columns(3)
-
-with c1:
+with col1:
     st.metric(
         "Resolution",
         f"{width} × {height}"
     )
 
-with c2:
+with col2:
     st.metric(
         "FPS",
         f"{fps:.2f}"
     )
 
-with c3:
+with col3:
     st.metric(
         "Frames",
         f"{frame_count:,}"
     )
 
 
+st.divider()
+
+
 # ============================================================
-# MODEL INFO
+# MODEL INFORMATION
 # ============================================================
 
 st.markdown(
-    '<div class="video-label">MODEL</div>',
+    """
+    <div class="section-heading">
+        <span class="section-marker">//</span>
+        <span class="section-title">03 / MODEL</span>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
@@ -761,11 +727,11 @@ with m3:
     )
 
 
-st.divider()
+st.write("")
 
 
 # ============================================================
-# RUN BUTTON
+# RUN MODEL
 # ============================================================
 
 run = st.button(
@@ -785,6 +751,7 @@ with st.spinner(
 ):
 
     try:
+
         model = load_model()
 
     except Exception as error:
@@ -797,7 +764,7 @@ with st.spinner(
 
 
 # ============================================================
-# TEMPORARY FILES
+# TEMPORARY RECONSTRUCTION FILE
 # ============================================================
 
 raw_temp = tempfile.NamedTemporaryFile(
@@ -810,6 +777,10 @@ raw_temp.close()
 raw_output_path = raw_temp.name
 
 
+# ============================================================
+# FINAL WEB VIDEO
+# ============================================================
+
 final_temp = tempfile.NamedTemporaryFile(
     delete=False,
     suffix=".mp4"
@@ -821,7 +792,7 @@ final_output_path = final_temp.name
 
 
 # ============================================================
-# OPEN INPUT
+# OPEN VIDEO
 # ============================================================
 
 cap = cv2.VideoCapture(
@@ -830,10 +801,22 @@ cap = cv2.VideoCapture(
 
 writer = cv2.VideoWriter(
     raw_output_path,
-    cv2.VideoWriter_fourcc(*"MJPG"),
+    cv2.VideoWriter_fourcc(
+        *"MJPG"
+    ),
     fps,
     (width, height)
 )
+
+if not writer.isOpened():
+
+    cap.release()
+
+    st.error(
+        "Could not create reconstruction video."
+    )
+
+    st.stop()
 
 
 # ============================================================
@@ -854,6 +837,7 @@ if not success:
     st.stop()
 
 
+# Preserve first frame
 writer.write(frame)
 
 previous_tensor = preprocess_frame(
@@ -864,11 +848,16 @@ processed_frames = 1
 
 
 # ============================================================
-# PROCESS
+# NEURAL RECONSTRUCTION
 # ============================================================
 
 st.markdown(
-    '<div class="section-heading"><span class="section-marker">//</span><span class="section-title">02 / NEURAL RECONSTRUCTION</span></div>',
+    """
+    <div class="section-heading">
+        <span class="section-marker">//</span>
+        <span class="section-title">04 / NEURAL RECONSTRUCTION</span>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
@@ -918,8 +907,9 @@ with torch.no_grad():
         )
 
         progress_text.caption(
+            f"Reconstructing frame "
             f"{processed_frames:,} / "
-            f"{frame_count:,} frames"
+            f"{frame_count:,}"
         )
 
 
@@ -932,32 +922,38 @@ writer.release()
 # ============================================================
 
 st.markdown(
-    '<div class="section-heading"><span class="section-marker">//</span><span class="section-title">03 / WEB ENCODING</span></div>',
+    """
+    <div class="section-heading">
+        <span class="section-marker">//</span>
+        <span class="section-title">05 / WEB ENCODING</span>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
 with st.spinner(
-    "Encoding browser-compatible MP4..."
+    "Preparing browser-compatible MP4..."
 ):
 
     try:
 
-        encode_browser_video(
+        encode_for_web(
             raw_output_path,
+            input_path,
             final_output_path
         )
 
     except Exception as error:
 
         st.error(
-            f"Encoding failed:\n{error}"
+            str(error)
         )
 
         st.stop()
 
 
 # ============================================================
-# FINAL VIDEO
+# READ FINAL VIDEO
 # ============================================================
 
 with open(
@@ -965,8 +961,12 @@ with open(
     "rb"
 ) as file:
 
-    final_video = file.read()
+    final_video_bytes = file.read()
 
+
+# ============================================================
+# COMPLETE
+# ============================================================
 
 st.success(
     f"Processing complete · "
@@ -974,18 +974,28 @@ st.success(
 )
 
 
+# ============================================================
+# RECONSTRUCTED VIDEO — PLAY DIRECTLY ON PAGE
+# ============================================================
+
 st.markdown(
-    '<div class="section-heading"><span class="section-marker">//</span><span class="section-title">04 / RECONSTRUCTED VIDEO</span></div>',
+    """
+    <div class="section-heading">
+        <span class="section-marker">//</span>
+        <span class="section-title">06 / RECONSTRUCTED VIDEO</span>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
+# This embeds the actual generated MP4 in the webpage.
 st.video(
-    final_video
+    final_video_bytes
 )
 
 
 # ============================================================
-# OUTPUT INFO
+# OUTPUT INFORMATION
 # ============================================================
 
 o1, o2, o3 = st.columns(3)
@@ -1017,19 +1027,25 @@ st.write("")
 
 st.download_button(
     label="Download Reconstructed Video",
-    data=final_video,
+    data=final_video_bytes,
     file_name="reconstructed_video.mp4",
     mime="video/mp4"
 )
 
 
+# ============================================================
+# FOOTNOTE
+# ============================================================
+
 st.divider()
 
 st.markdown(
     """
-    <div class="small-note">
-        OUTPUT: H.264 MP4 · BROWSER COMPATIBLE<br>
-        LEARNED BPP IS A MODEL RATE ESTIMATE, NOT THE FINAL MP4 BITRATE.
+    <div class="note">
+        The displayed output is a reconstructed H.264 MP4
+        generated from the neural model. The learned BPP
+        reported during evaluation is a model rate estimate
+        and is separate from the final MP4 container size.
     </div>
     """,
     unsafe_allow_html=True
