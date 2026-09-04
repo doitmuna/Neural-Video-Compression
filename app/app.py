@@ -1,6 +1,7 @@
 import os
 import sys
 import tempfile
+import subprocess
 
 import cv2
 import numpy as np
